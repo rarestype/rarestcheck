@@ -9,7 +9,7 @@ readarray -t additional < Scripts/AdditionalRepositories
 
 any_failed=0
 
-for id in "${organization[@]}"; do
+for id in "${organization[@]}" "${additional[@]}"; do
     if ! Scripts/Check "$id"; then
         echo "❗ repository $id contains insecure email addresses!!!"
         any_failed=1
