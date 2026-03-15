@@ -11,8 +11,10 @@ any_failed=0
 
 for id in "${organization[@]}"; do
     if ! Scripts/Check "$id"; then
-        echo "Check failed for $id!"
+        echo "❗ repository $id contains insecure email addresses!!!"
         any_failed=1
+    else
+        echo "💞 repository $id contains no insecure email addresses!"
     fi
 done
 
