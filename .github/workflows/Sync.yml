@@ -16,6 +16,8 @@ jobs:
 
             -   name: 💞 Setup credentials 💞
                 run: gh auth setup-git
+                env:
+                    GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
 
             -   name: 💞 Synchronize templates 💞
                 run: Scripts/SyncAll
