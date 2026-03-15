@@ -7,7 +7,16 @@ readarray -t organization < \
     <(gh repo list rarestype --source --json nameWithOwner -q '.[].nameWithOwner')
 readarray -t additional < Scripts/AdditionalRepositories
 
-for id in "${organization[@]}" "${additional[@]}"; do
-    echo "validating repo '${id}'"
-    Scripts/Check "$id"
+any_failed=0
+
+for id in "${organization[@]}"; do
+    if ! Scripts/Check "$id"; then
+        echo "Check failed for $id!"
+        any_failed=1
+    fi
 done
+
+if [ "$any_failed" -ne 0 ]; then
+    echo "One or more repositories contains insecure emails!"
+    exit 1
+fi

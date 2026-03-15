@@ -8,13 +8,14 @@ cd repositories
 repository=${1##*/}
 
 if [ ! -d "$repository" ]; then
-    git clone "https://github.com/$1"
+    git clone -q "https://github.com/$1"
 fi
 
 cd "$repository"
 
-insecure_emails_author=$(git log --format="%ae" | grep "@gmail.com" | sort -u | wc -l)
-insecure_emails_committer=$(git log --format="%ce" | grep "@gmail.com" | sort -u | wc -l)
+# if there are no emails, grep will also fail, which is why coalescence is needed
+insecure_emails_author=$(git log --format="%ae" | grep "@gmail.com" | sort -u | wc -l || true)
+insecure_emails_committer=$(git log --format="%ce" | grep "@gmail.com" | sort -u | wc -l || true)
 
 if [ $insecure_emails_author -ne "0" ]; then
     echo "found ${insecure_emails_author} insecure author email addresses in repo '${repository}'!"
