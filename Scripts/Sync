@@ -1,0 +1,39 @@
+#!/bin/bash
+
+set -euo pipefail
+
+mkdir -p workspace/
+cd workspace
+
+repository=${2##*/}
+
+if [ ! -d "$repository" ]; then
+    gh repo clone "$2" -- --quiet
+fi
+
+cd "$repository"
+
+mkdir -p .github/workflows
+
+for template in "$1"/Workflows/*.yml; do
+    name=$(basename "$template")
+    file=".github/workflows/$name"
+    echo "#  ❣❣❣  DO NOT EDIT  ❣  THIS FILE IS AUTOMATICALLY SYNCED  ❣  DO NOT EDIT  ❣❣❣" \
+        > "$file"
+    echo "" >> "$file"
+    cat "$template" >> "$file"
+    git add "$file"
+done
+
+if ! git diff --staged --exit-code --quiet ; then
+    echo "files changed!"
+    git config user.name "rarest automation"
+    git config user.email "automation@noreply.rarestype.com"
+
+    git commit -m "synchronize files from https://github.com/rarestype/rarestcheck"
+    git push
+
+    echo "💞 synchronized repository $id!"
+else
+    echo "🤍 no changes to repository $id"
+fi
