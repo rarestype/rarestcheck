@@ -80,7 +80,7 @@ jobs:
                     git push origin "${{ steps.increment.outputs.version }}"
 
             -   name: ⚡ Create release ⚡
-                if: steps.bump.outputs.type != 'none' && env.CREATE_RELEASE == 'true'
+                if: steps.parse.outputs.type != 'none' && env.CREATE_RELEASE == 'true'
                 run: |
                     gh release create "${{ steps.increment.outputs.version }}" \
                         --title "${{ steps.increment.outputs.version }}" \

@@ -33,7 +33,7 @@ if ! git diff --staged --exit-code --quiet ; then
     git commit -m "synchronize files from https://github.com/rarestype/rarestcheck"
     git push
 
-    echo "💞 synchronized repository $id!"
+    echo "💞 synchronized repository $2!"
 else
-    echo "🤍 no changes to repository $id"
+    echo "🤍 no changes to repository $2"
 fi
