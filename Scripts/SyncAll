@@ -6,8 +6,18 @@ tag='autosync'
 
 # --source excludes forked repos
 readarray -t organization < \
-    <(gh repo list rarestype --source --topic $tag --json nameWithOwner -q '.[].nameWithOwner')
-readarray -t additional < Scripts/AdditionalRepositories
+    <(gh repo list rarestype --source --topic "$tag" --json nameWithOwner -q '.[].nameWithOwner')
+readarray -t additional_unfiltered < Scripts/AdditionalRepositories
+
+additional=()
+for repo in "${additional_unfiltered[@]}"; do
+    # skip empty lines
+    if [ -z "$repo" ]; then continue; fi
+
+    if gh api "repos/$repo" --jq '.topics[]' | grep -Fxq "$tag"; then
+        additional+=("$repo")
+    fi
+done
 
 templates=$(realpath Templates)
 
