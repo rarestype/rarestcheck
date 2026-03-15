@@ -15,5 +15,8 @@ jobs:
         name: Audit email addresses
 
         steps:
+            -   name: 💗 Checkout repository 💗
+                uses: actions/checkout@v6
+
             -   name: 💗 Check email addresses 💗
                 run: Scripts/CheckAll
