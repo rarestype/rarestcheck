@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# --source excludes forked repos
+readarray -t organization < \
+    <(gh repo list rarestype --source --json nameWithOwner -q '.[].nameWithOwner')
+readarray -t additional < Scripts/AdditionalRepositories
+
+for id in "${organization[@]}" "${additional[@]}"; do
+    Scripts/Check "$id"
+done
