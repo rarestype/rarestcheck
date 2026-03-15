@@ -12,13 +12,13 @@ on:
 jobs:
     emails:
         runs-on: ubuntu-latest
-        name: Audit email addresses
+        name: email addresses
 
         steps:
-            -   name: 💗 Checkout repository 💗
+            -   name: 💞 Checkout repository 💞
                 uses: actions/checkout@v6
 
-            -   name: 💗 Check email addresses 💗
+            -   name: 💞 Check email addresses 💞
                 run: Scripts/CheckAll
                 env:
                     GH_TOKEN: ${{ github.token }}
