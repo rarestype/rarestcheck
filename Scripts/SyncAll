@@ -2,9 +2,11 @@
 
 set -euo pipefail
 
+tag='autosync'
+
 # --source excludes forked repos
 readarray -t organization < \
-    <(gh repo list rarestype --source --json nameWithOwner -q '.[].nameWithOwner')
+    <(gh repo list rarestype --source --topic $tag --json nameWithOwner -q '.[].nameWithOwner')
 readarray -t additional < Scripts/AdditionalRepositories
 
 templates=$(realpath Templates)
