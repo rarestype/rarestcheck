@@ -8,5 +8,6 @@ readarray -t organization < \
 readarray -t additional < Scripts/AdditionalRepositories
 
 for id in "${organization[@]}" "${additional[@]}"; do
+    echo "validating repo '${id}'"
     Scripts/Check "$id"
 done
