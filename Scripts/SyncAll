@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# --source excludes forked repos
+readarray -t organization < \
+    <(gh repo list rarestype --source --json nameWithOwner -q '.[].nameWithOwner')
+readarray -t additional < Scripts/AdditionalRepositories
+
+templates=$(realpath Templates)
+
+for id in "${organization[@]}" "${additional[@]}"; do
+    # we do not want to push to this repo itself
+    if [ "$id" != 'rarestype/rarestcheck' ]; then
+        Scripts/Sync "$templates" "$id"
+    fi
+done
