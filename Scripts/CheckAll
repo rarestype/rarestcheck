@@ -21,9 +21,9 @@ done
 if [ "$any_failed" -ne 0 ]; then
     echo "One or more repositories contains insecure emails!"
     echo "please create a mailmap file, then run"
-    echo "git filter-repo --mailmap ../.mailmap"
+    echo "git filter-repo --mailmap ../../.mailmap"
     echo "git filter-repo --path .mailmap --invert-paths"
     echo "git push origin --force --all"
-    echo "git push origin --tags"
+    echo "git push origin --force --tags"
     exit 1
 fi
