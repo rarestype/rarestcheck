@@ -13,6 +13,30 @@ fi
 
 cd "$repository"
 
+# sync licenses (only if repo is already marked with license)
+license=$(gh repo view "$2" --json licenseInfo --jq '.licenseInfo.key')
+case "$license" in
+    "apache-2.0")
+        cp -f "$1"/Legal/Apache/LICENSE LICENSE
+        git add LICENSE
+
+        sed \
+            -e "s|__REPOSITORY_NAME__|${repository}|g" \
+            -e "s|__REPOSITORY_ID__|${2}|g" \
+            "$1"/Legal/Apache/NOTICE > NOTICE
+        git add NOTICE
+        ;;
+
+    "mpl-2.0")
+        cp -f "$1"/Legal/MPL/LICENSE LICENSE
+        git add LICENSE
+        ;;
+
+    *)
+        ;;
+esac
+
+# sync workflows
 mkdir -p .github/workflows
 
 for template in "$1"/Workflows/*.yml; do
