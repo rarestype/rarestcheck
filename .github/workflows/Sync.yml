@@ -22,6 +22,6 @@ jobs:
                     GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
 
             -   name: 💞 Synchronize templates 💞
-                run: Scripts/SyncAll
+                run: Scripts/SyncAll --push
                 env:
                     GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
