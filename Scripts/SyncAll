@@ -2,6 +2,103 @@
 
 set -euo pipefail
 
+usage() {
+    echo "Usage: $0 [options]"
+    echo
+    echo "  -f | --push     push to GitHub"
+    echo
+    exit 1
+}
+
+sync() {
+    mkdir -p workspace/
+    cd workspace
+
+    local repository=${2##*/}
+
+    if [ ! -d "$repository" ]; then
+        gh repo clone "$2" -- --quiet
+    fi
+
+    cd "$repository"
+
+    # sync licenses (only if repo is already marked with license)
+    local license=$(gh repo view "$2" --json licenseInfo --jq '.licenseInfo.key')
+    case "$license" in
+        "apache-2.0")
+            cp -f "$1"/Legal/Apache/LICENSE LICENSE
+            git add LICENSE
+
+            sed \
+                -e "s|__REPOSITORY_NAME__|${repository}|g" \
+                -e "s|__REPOSITORY_ID__|${2}|g" \
+                "$1"/Legal/Apache/NOTICE > NOTICE
+            git add NOTICE
+            ;;
+
+        "mpl-2.0")
+            cp -f "$1"/Legal/MPL/LICENSE LICENSE
+            git add LICENSE
+            ;;
+
+        *)
+            ;;
+    esac
+
+    # sync workflows
+    mkdir -p .github/workflows
+
+    for template in "$1"/Workflows/*.yml; do
+        local file=$(template##*/)
+        local name=${file%.yml}
+        local path=".github/workflows/$file"
+        echo "#  ❣❣❣  DO NOT EDIT  ❣  THIS FILE IS AUTOMATICALLY SYNCED  ❣  DO NOT EDIT  ❣❣❣" \
+            > "$path"
+        echo "" >> "$path"
+        cat "$template" >> "$path"
+
+        for fragment in Deploy; do
+            expected="${1}/WorkflowFragments/${name}.${fragment}.yml"
+            if [[ -f "$expected" && -f ".github/functions/${fragment}.yml" ]]; then
+                cat "$expected" >> "$path"
+            fi
+        done
+
+        git add "$path"
+    done
+
+    if ! git diff --staged --exit-code --quiet ; then
+        echo "files changed!"
+        git config user.name "rarest automation"
+        git config user.email "automation@noreply.rarestype.com"
+
+        git commit -m "synchronize files from https://github.com/rarestype/rarestcheck"
+        if [ "$PUSH" = true ]; then
+            git push
+        fi
+
+        echo "💞 synchronized repository $2!"
+    else
+        echo "🤍 no changes to repository $2"
+    fi
+}
+
+PUSH=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -f | --push)
+            PUSH=true
+            shift
+            ;;
+
+        *)
+            echo "Unknown option: $1" >&2
+            usage
+            ;;
+    esac
+done
+
 tag='autosync'
 
 # --source excludes forked repos
@@ -24,6 +121,6 @@ templates=$(realpath Templates)
 for id in "${organization[@]}" "${additional[@]}"; do
     # we do not want to push to this repo itself
     if [ "$id" != 'rarestype/rarestcheck' ]; then
-        Scripts/Sync "$templates" "$id"
+        sync "$templates" "$id"
     fi
 done

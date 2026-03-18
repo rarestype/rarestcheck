@@ -1,0 +1,7 @@
+    deploy:
+        name: Deploy
+        needs: release
+        uses: ./.github/functions/Deploy.yml
+        secrets: inherit
+        with:
+            version: ${{ needs.release.outputs.version }}
