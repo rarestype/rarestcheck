@@ -49,7 +49,7 @@ sync() {
     mkdir -p .github/workflows
 
     for template in "$1"/Workflows/*.yml; do
-        local file=$(template##*/)
+        local file=${template##*/}
         local name=${file%.yml}
         local path=".github/workflows/$file"
         echo "#  ❣❣❣  DO NOT EDIT  ❣  THIS FILE IS AUTOMATICALLY SYNCED  ❣  DO NOT EDIT  ❣❣❣" \
