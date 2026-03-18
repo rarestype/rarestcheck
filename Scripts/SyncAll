@@ -59,7 +59,7 @@ sync() {
 
         # in the future we may support other fragments
         for fragment in Deploy; do
-            expected="${1}/WorkflowFragments/${name}.${fragment}.yml"
+            local expected="${1}/WorkflowFragments/${name}.${fragment}.yml"
             if [[ -f "$expected" && -f ".github/workflows/${fragment}.yml" ]]; then
                 cat "$expected" >> "$path"
             fi
