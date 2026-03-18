@@ -23,7 +23,7 @@ if [ "$any_failed" -ne 0 ]; then
     echo "please create a mailmap file, then run"
     echo "git filter-repo --mailmap ../../.mailmap"
     echo "git filter-repo --path .mailmap --invert-paths"
-    echo "git add remote origin <url>"
+    echo "git remote add origin <url>"
     echo "git push origin --force --all"
     echo "git push origin --force --tags"
     exit 1
