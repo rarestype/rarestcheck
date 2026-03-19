@@ -73,7 +73,7 @@ sync() {
         git config user.name "rarest automation"
         git config user.email "automation@noreply.rarestype.com"
 
-        git commit -m "synchronize files from https://github.com/rarestype/rarestcheck"
+        git commit -m "[autosync]"
         if [ "$PUSH" = true ]; then
             git push
         fi
