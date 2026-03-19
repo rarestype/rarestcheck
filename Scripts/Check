@@ -13,15 +13,29 @@ fi
 
 cd "$repository"
 
-# if there are no emails, grep will also fail, which is why coalescence is needed
-insecure_emails_history=$(git log --format="%ae %ce" | grep "@gmail.com" | sort -u | wc -l || true)
-insecure_emails_mailmap=$(grep "@gmail.com" .mailmap | sort -u | wc -l || true)
+blacklisted_domains=(
+    "@gmail\.com"
+    "@yahoo\.com"
+    "@hotmail\.com"
+    "@outlook\.com"
+    "@aol\.com"
+    "@icloud\.com"
+    "@sasktel\.net"
+)
+blacklist_pattern=$(IFS="|"; echo "${blacklisted_domains[*]}")
 
-if [ $insecure_emails_history -ne "0" ]; then
+# if there are no emails, grep will also fail, which is why coalescence is needed
+insecure_emails_history=$(git log --format="%ae %ce" | grep -E -i "$blacklist_pattern" | sort -u | wc -l || true)
+
+if [ "$insecure_emails_history" -ne "0" ]; then
     echo "found ${insecure_emails_history} insecure email addresses in git history of repo '${repository}'!"
     exit 1
 fi
-if [ $insecure_emails_mailmap -ne "0" ]; then
-    echo "found ${insecure_emails_mailmap} insecure email addresses in .mailmap of repo '${repository}'!"
-    exit 1
+
+if [ -f ".mailmap" ]; then
+    insecure_emails_mailmap=$(grep -E -i "$blacklist_pattern" .mailmap | sort -u | wc -l || true)
+    if [ "$insecure_emails_mailmap" -ne "0" ]; then
+        echo "found ${insecure_emails_mailmap} insecure email addresses in .mailmap of repo '${repository}'!"
+        exit 1
+    fi
 fi
