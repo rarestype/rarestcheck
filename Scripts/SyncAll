@@ -68,6 +68,11 @@ sync() {
         git add "$path"
     done
 
+    # sync FUNDING.yml
+    cp -f "$1"/FUNDING.yml .github/FUNDING.yml
+    git add .github/FUNDING.yml
+
+    # commit and push
     if ! git diff --staged --exit-code --quiet ; then
         echo "files changed!"
         git config user.name "rarest automation"
