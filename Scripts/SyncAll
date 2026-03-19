@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+AUTOSYNC_HEADER="#  ❣❣❣  DO NOT EDIT  ❣  THIS FILE IS AUTOMATICALLY SYNCED  ❣  DO NOT EDIT  ❣❣❣"
+
 usage() {
     echo "Usage: $0 [options]"
     echo
@@ -52,8 +54,7 @@ sync() {
         local file=${template##*/}
         local name=${file%.yml}
         local path=".github/workflows/$file"
-        echo "#  ❣❣❣  DO NOT EDIT  ❣  THIS FILE IS AUTOMATICALLY SYNCED  ❣  DO NOT EDIT  ❣❣❣" \
-            > "$path"
+        echo "$AUTOSYNC_HEADER" > "$path"
         echo "" >> "$path"
         cat "$template" >> "$path"
 
@@ -68,6 +69,13 @@ sync() {
         git add "$path"
     done
 
+    # sync FUNDING.yml
+    local funding_yml=".github/FUNDING.yml"
+    echo "$AUTOSYNC_HEADER" > "$funding_yml"
+    cat "$1/FUNDING.yml" >> "$funding_yml"
+    git add "$funding_yml"
+
+    # commit and push
     if ! git diff --staged --exit-code --quiet ; then
         echo "files changed!"
         git config user.name "rarest automation"
