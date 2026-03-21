@@ -12,7 +12,7 @@ usage() {
     exit 1
 }
 
-sync() {
+sync() (
     mkdir -p workspace/
     cd workspace
 
@@ -50,13 +50,31 @@ sync() {
     # sync workflows
     mkdir -p .github/workflows
 
+    # these workflows only synced if already present
+    for template in "$1"/Workflows/Optional/*.yml; do
+        local file=${template##*/}
+        local name=${file%.yml}
+        local path=".github/workflows/$file"
+        if [ -f "$path" ]; then
+            (
+                echo "$AUTOSYNC_HEADER"
+                echo
+                cat "$template"
+            ) > "$path"
+            git add "$path"
+        fi
+    done
+
+    # these workflows always present
     for template in "$1"/Workflows/*.yml; do
         local file=${template##*/}
         local name=${file%.yml}
         local path=".github/workflows/$file"
-        echo "$AUTOSYNC_HEADER" > "$path"
-        echo "" >> "$path"
-        cat "$template" >> "$path"
+        (
+            echo "$AUTOSYNC_HEADER"
+            echo
+            cat "$template"
+        ) > "$path"
 
         # in the future we may support other fragments
         for fragment in Deploy; do
@@ -90,7 +108,7 @@ sync() {
     else
         echo "🤍 no changes to repository $2"
     fi
-}
+)
 
 PUSH=false
 
