@@ -26,6 +26,7 @@ jobs:
                 with:
                     # fetch all history so the workflow can find previous tags
                     fetch-depth: 0
+                    ref: ${{ github.event.pull_request.base.ref }}
 
             -   name: ⚡ Parse bump type ⚡
                 id: parse
