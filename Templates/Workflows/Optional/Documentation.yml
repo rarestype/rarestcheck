@@ -16,6 +16,9 @@ jobs:
         steps:
             -   name: 🤍 Checkout repository 🤍
                 uses: actions/checkout@v6
+                with:
+                    # need to fetch the preceding commit
+                    fetch-depth: 2
 
             -   name: 🤍 Decide checks 🤍
                 uses: tj-actions/changed-files@v47
