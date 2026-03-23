@@ -25,7 +25,7 @@ blacklisted_domains=(
 blacklist_pattern=$(IFS="|"; echo "${blacklisted_domains[*]}")
 
 # if there are no emails, grep will also fail, which is why coalescence is needed
-insecure_emails_history=$(git log --format="%ae %ce" | grep -E -i "$blacklist_pattern" | sort -u | wc -l || true)
+insecure_emails_history=$(git log --format="%ae %ce" | sort -u | grep -E -i "$blacklist_pattern" | wc -l || true)
 
 if [ "$insecure_emails_history" -ne "0" ]; then
     echo "found ${insecure_emails_history} insecure email addresses in git history of repo '${repository}'!"
