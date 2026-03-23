@@ -33,4 +33,4 @@ jobs:
                 if: always()
                 with:
                     badge: Sync
-                    title: autosync
+                    title: sync
