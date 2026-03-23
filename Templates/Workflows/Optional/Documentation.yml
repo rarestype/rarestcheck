@@ -3,6 +3,8 @@
 # supported platform.
 name: Documentation
 
+permissions:
+    contents: write
 on:
     push:
         branches: [ master ]

@@ -62,6 +62,20 @@ sync() (
                 cat "$template"
             ) > "$path"
             git add "$path"
+
+            # if this workflow has children, write them too
+            if [ -d "$1"/Workflows/Optional/"$name" ]; then
+                for child in "$1"/Workflows/Optional/"$name"/*.yml; do
+                    local child_file=${child##*/}
+                    local child_path=".github/workflows/$child_file"
+                    (
+                        echo "$AUTOSYNC_HEADER"
+                        echo
+                        cat "$child"
+                    ) > "$child_path"
+                    git add "$child_path"
+                done
+            fi
         fi
     done
 
