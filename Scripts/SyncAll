@@ -107,6 +107,14 @@ sync() (
     cat "$1/FUNDING.yml" >> "$funding_yml"
     git add "$funding_yml"
 
+    # sync README.md, if present
+    if [ -f README.md ]; then
+        python3 ../../Scripts/SyncReadme.py "$2" \
+            --readme README.md \
+            --labels "$1/StatusLabels.txt"
+        git add README.md
+    fi
+
     # commit and push
     if ! git diff --staged --exit-code --quiet ; then
         echo "files changed!"
