@@ -79,7 +79,7 @@ def generate_table_lines(repo, labels_file):
 
     # 3. Assemble the generated markdown table lines
     table_lines = [
-        "| Platform | Build |",
+        "| Platform | Status |",
         "| -------- | ------|"
     ]
     table_lines.extend(rows)
