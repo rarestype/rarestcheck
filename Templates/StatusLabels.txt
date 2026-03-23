@@ -1,0 +1,14 @@
+Documentation/_all: 💬 Documentation
+Documentation/Linux:
+Documentation/macOS:
+
+Update/Firewall: 🗝 Update
+
+Tests/Linux: 🐧 Linux
+Tests/macOS: 🍎 Darwin
+Tests/iOS: 🍎 Darwin (iOS)
+Tests/tvOS: 🍎 Darwin (tvOS)
+Tests/visionOS: 🍎 Darwin (visionOS)
+Tests/watchOS: 🍎 Darwin (watchOS)
+Tests/Android: 🤖 Android
+Tests/Android: 🤖 Android
