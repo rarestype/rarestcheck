@@ -6,6 +6,7 @@ Update/Firewall: 🗝 Update
 
 Tests/Linux-server: 🐧 Linux (server)
 Tests/Linux: 🐧 Linux
+Tests/Linux-musl: 🐧 Linux (musl)
 Tests/macOS: 🍏 Darwin
 Tests/iOS: 🍏 Darwin (iOS)
 Tests/tvOS: 🍏 Darwin (tvOS)
