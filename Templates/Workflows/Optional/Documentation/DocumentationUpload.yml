@@ -22,7 +22,10 @@ jobs:
                         exit 1
                     fi
 
-                    if gh api "${{ github.event.workflow_run.jobs_url }}" --jq '.jobs[].conclusion' | grep -q "skipped"; then
+                    ALL_SUCCESS=$(gh api "${{ github.event.workflow_run.jobs_url }}" \
+                        --jq 'all(.jobs[]; .conclusion == "success")')
+
+                    if [[ "$ALL_SUCCESS" != true ]]; then
                         echo "not updating badge because one or more build jobs were skipped"
                         echo "skipped=true" >> "$GITHUB_OUTPUT"
                     else
