@@ -24,6 +24,32 @@ sync() (
 
     cd "$repository"
 
+    # check the repository visibility
+    local is_private=$(gh repo view "$2" --json isPrivate --jq '.isPrivate')
+
+    # vacuum any badge refs lingering under the wrong namespace, depending on repo visibility
+    if [ "$is_private" == "true" ]; then
+        local target_namespace="refs/badges/ci/*"
+    else
+        local target_namespace="refs/tags/badges/ci/*"
+    fi
+
+    local refs_to_delete=$(git ls-remote origin "$target_namespace" | awk '{print $2}')
+    if [ -n "$refs_to_delete" ]; then
+        local delete_args=""
+        for ref in $refs_to_delete; do
+            delete_args="$delete_args :$ref"
+        done
+
+        # Only perform the remote deletion if the user passed the --push flag
+        if [ "$PUSH" = true ]; then
+            echo "cleaning up stale ref ${repository}:${ref}..."
+            git push origin $delete_args
+        else
+            echo "detected stale ref ${repository}:${ref}..."
+        fi
+    fi
+
     # sync licenses (only if repo is already marked with license)
     local license=$(gh repo view "$2" --json licenseInfo --jq '.licenseInfo.key')
     case "$license" in
@@ -111,7 +137,8 @@ sync() (
     if [ -f README.md ]; then
         python3 ../../Scripts/SyncReadme.py "$2" \
             --readme README.md \
-            --labels "$1/StatusLabels.txt"
+            --labels "$1/StatusLabels.txt" \
+            --is-private "$is_private"
         git add README.md
     fi
 

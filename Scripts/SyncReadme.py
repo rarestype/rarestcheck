@@ -3,8 +3,7 @@ import argparse
 import subprocess
 import sys
 
-def get_git_refs(repo):
-    """Fetches git refs directly from the remote repository url."""
+def get_git_refs(repo, namespace):
     remote_url = f"https://github.com/{repo}.git"
     try:
         output = subprocess.check_output(["git", "ls-remote", remote_url], text=True)
@@ -14,14 +13,13 @@ def get_git_refs(repo):
 
     refs = set()
     for line in output.splitlines():
-        if "refs/badges/ci/" in line:
+        if namespace in line:
             # Extract the part after the namespace
-            ref_suffix = line.split("refs/badges/ci/")[-1].strip()
+            ref_suffix = line.split(namespace)[-1].strip()
             refs.add(ref_suffix)
     return refs
 
 def parse_labels(filename):
-    """Parses the labels file while preserving order."""
     ordered_refs = []
     labels = {}
 
@@ -47,9 +45,16 @@ def parse_labels(filename):
 
     return ordered_refs, labels
 
-def generate_table_lines(repo, labels_file):
-    """Generates the markdown lines for the status table."""
-    available_refs = get_git_refs(repo)
+def image_url(repo, ref, is_private):
+    if is_private:
+        return f"https://github.com/{repo}/raw/badges/ci/{ref}/status.svg"
+    else:
+        return f"https://raw.githubusercontent.com/{repo}/refs/badges/ci/{ref}/status.svg"
+
+def generate_table_lines(repo, labels_file, is_private):
+    # Determine the correct namespace based on repository visibility
+    namespace = "refs/tags/badges/ci/" if is_private else "refs/badges/ci/"
+    available_refs = get_git_refs(repo, namespace)
     ordered_refs, labels = parse_labels(labels_file)
 
     rows = []
@@ -65,16 +70,20 @@ def generate_table_lines(repo, labels_file):
                 continue
 
             workflow = ref.split("/")[0]
-            row = f"| {display_text} | [![Status](https://raw.githubusercontent.com/{repo}/refs/badges/ci/{ref}/status.svg)](https://github.com/{repo}/actions/workflows/{workflow}.yml) |"
+
+            # Route to the correct CDN based on visibility
+            url = image_url(repo, ref, is_private)
+            row = f"| {display_text} | [![Status]({url})](https://github.com/{repo}/actions/workflows/{workflow}.yml) |"
             rows.append(row)
             available_refs.remove(ref)
 
     # 2. Process any remaining git refs not found in the labels file
-    # Sort them deterministically (alphabetically)
     unmatched_refs = sorted(list(available_refs))
     for ref in unmatched_refs:
         workflow = ref.split("/")[0]
-        row = f"| ??? | [![Status](https://raw.githubusercontent.com/{repo}/refs/badges/ci/{ref}/status.svg)](https://github.com/{repo}/actions/workflows/{workflow}.yml) |"
+
+        url = image_url(repo, ref, is_private)
+        row = f"| ??? | [![Status]({url})](https://github.com/{repo}/actions/workflows/{workflow}.yml) |"
         rows.append(row)
 
     # 3. Assemble the generated markdown table lines
@@ -86,7 +95,6 @@ def generate_table_lines(repo, labels_file):
     return table_lines
 
 def update_readme(readme_path, table_lines):
-    """Injects the generated table into the target markdown file between the fences."""
     try:
         with open(readme_path, "r", encoding="utf-8") as f:
             content = f.read()
@@ -121,7 +129,13 @@ if __name__ == "__main__":
     parser.add_argument("--readme", default="README.md", help="Path to the target README file")
     parser.add_argument("--labels", default="StatusLabels.txt", help="Path to the labels text file")
 
+    # New argument to receive visibility from the bash script
+    parser.add_argument("--is-private", choices=["true", "false"], default="false", help="Whether the repository is private")
+
     args = parser.parse_args()
 
-    table_lines = generate_table_lines(args.repo, args.labels)
+    # Convert the string to a boolean
+    is_private = args.is_private == "true"
+
+    table_lines = generate_table_lines(args.repo, args.labels, is_private)
     update_readme(args.readme, table_lines)
