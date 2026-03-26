@@ -38,15 +38,13 @@ sync() (
     if [ -n "$refs_to_delete" ]; then
         local delete_args=""
         for ref in $refs_to_delete; do
+            echo "detected stale ref ${repository}:${ref}..."
             delete_args="$delete_args :$ref"
         done
 
         # Only perform the remote deletion if the user passed the --push flag
         if [ "$PUSH" = true ]; then
-            echo "cleaning up stale ref ${repository}:${ref}..."
             git push origin $delete_args
-        else
-            echo "detected stale ref ${repository}:${ref}..."
         fi
     fi
 
