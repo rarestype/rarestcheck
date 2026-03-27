@@ -44,7 +44,7 @@ runs:
                 echo "swift-id=$ID" >> $GITHUB_OUTPUT
 
         -   name: Install Swift
-            uses: rarestype/swift-install-action@master
+            uses: rarestype/swift-install-action@v1
             with:
                 swift-prefix: ${{ steps.parameters.outputs.swift-prefix }}
                 swift-id: ${{ steps.parameters.outputs.swift-id }}
