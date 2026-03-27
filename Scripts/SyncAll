@@ -74,11 +74,25 @@ sync() (
     # sync workflows
     mkdir -p .github/workflows
 
+    # these actions only synced if already present
+    for template in "$1"/Actions/Optional/*; do
+        local name=${template##*/}
+        local path=".github/actions/${name}"
+        if [ -d "$path" ]; then
+            (
+                echo "$AUTOSYNC_HEADER"
+                echo
+                cat "$template/action.yml"
+            ) > "${path}/action.yml"
+            git add "${path}/action.yml"
+        fi
+    done
+
     # these workflows only synced if already present
     for template in "$1"/Workflows/Optional/*.yml; do
         local file=${template##*/}
         local name=${file%.yml}
-        local path=".github/workflows/$file"
+        local path=".github/workflows/${file}"
         if [ -f "$path" ]; then
             (
                 echo "$AUTOSYNC_HEADER"
@@ -88,8 +102,8 @@ sync() (
             git add "$path"
 
             # if this workflow has children, write them too
-            if [ -d "$1"/Workflows/Optional/"$name" ]; then
-                for child in "$1"/Workflows/Optional/"$name"/*.yml; do
+            if [ -d "${1}/Workflows/Optional/${name}" ]; then
+                for child in "${1}/Workflows/Optional/${name}"/*.yml; do
                     local child_file=${child##*/}
                     local child_path=".github/workflows/$child_file"
                     (
