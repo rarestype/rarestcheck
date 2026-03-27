@@ -2,11 +2,11 @@ Documentation/_all: 💬 Documentation
 Documentation/Linux:
 Documentation/macOS:
 
-Release/macOS: 💝 Release
-Release/Linux-server: 💝 Release
-Release/Linux-aarch64: 💝 Release
-Release/Linux-x86_64: 💝 Release
-Release/_all: 💝 Release
+SemanticRelease/macOS: 💝 Release
+SemanticRelease/Linux-server: 💝 Release
+SemanticRelease/Linux-aarch64: 💝 Release
+SemanticRelease/Linux-x86_64: 💝 Release
+SemanticRelease/_all: 💝 Release
 
 Update/Firewall: 🗝 Update
 
