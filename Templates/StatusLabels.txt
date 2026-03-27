@@ -2,6 +2,12 @@ Documentation/_all: 💬 Documentation
 Documentation/Linux:
 Documentation/macOS:
 
+Release/macOS: 💝 Release
+Release/Linux-server: 💝 Release
+Release/Linux-aarch64: 💝 Release
+Release/Linux-x86_64: 💝 Release
+Release/_all: 💝 Release
+
 Update/Firewall: 🗝 Update
 
 Tests/Linux-server: 🐧 Linux (server)
