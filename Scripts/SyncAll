@@ -78,19 +78,19 @@ sync() (
     # sync workflows
     if [ -d .github/workflows ]; then
         # align all Swift and Xcode version numbers in (manually-written) workflows
-        pattern_xcode_version='[[:digit:]]+(\.[[:digit:]]+)?'
-        pattern_swift_version='[[:digit:]]+\.[[:digit:]]+(\.[[:digit:]]+)?'
+        pattern_minor='[[:digit:]]+(\.[[:digit:]]+)?'
+        pattern_patch='[[:digit:]]+\.[[:digit:]]+(\.[[:digit:]]+)?'
         pattern_swift_install='uses: rarestype/swift-install-action@[^[:space:]]+'
-        pattern_swift_release="swift-release:[[:space:]]+${pattern_swift_version}-RELEASE"
+        pattern_swift_release="swift-release:[[:space:]]+[\"']?${pattern_patch}-RELEASE[\"']?"
 
         for path in .github/workflows/*.yml; do
             sed -i -E \
-                -e "s|${pattern_swift_install}|uses: ${swift_install}|g" "$path" \
-                -e "s|${pattern_swift_release}|swift-release: ${swift}-RELEASE|g" "$path" \
-                -e "s/swift-${pattern_swift_version}-release/swift-${swift}-release/g" "$path" \
-                -e "s/swift-${pattern_swift_version}-RELEASE/swift-${swift}-RELEASE/g" "$path" \
-                -e "s/Xcode ${pattern_xcode_version}/Xcode ${xcode}/g" \
-                -e "s/Xcode_${pattern_xcode_version}/Xcode_${xcode}/g" "$path"
+                -e "s|${pattern_swift_install}|uses: ${swift_install}|g" \
+                -e "s|${pattern_swift_release}|swift-release: ${swift}-RELEASE|g" \
+                -e "s/swift-${pattern_patch}-release/swift-${swift}-release/g" \
+                -e "s/swift-${pattern_patch}-RELEASE/swift-${swift}-RELEASE/g" \
+                -e "s/Xcode ${pattern_minor}/Xcode ${xcode}/g" \
+                -e "s/Xcode_${pattern_minor}/Xcode_${xcode}/g" "$path"
 
             git add "$path"
         done
