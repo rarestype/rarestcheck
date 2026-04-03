@@ -152,11 +152,31 @@ sync() (
             cat "$template"
         ) > "$path"
 
+        # conditional fragments
         # in the future we may support other fragments
+        local optional_jobs=()
         for fragment in Deploy; do
             local expected="${1}/WorkflowFragments/${name}.${fragment}.yml"
             if [[ -f "$expected" && -f ".github/workflows/${fragment}.yml" ]]; then
                 cat "$expected" >> "$path"
+                optional_jobs+=("${fragment,,}")
+            fi
+        done
+        # mandatory fragments
+        for fragment in Publish; do
+            local expected="${1}/WorkflowFragments/${name}.${fragment}.yml"
+            if [[ -f "$expected" ]]; then
+                while IFS= read -r line || [ -n "$line" ]; do
+                    if [[ "$line" == *__OPTIONAL_JOBS__* ]]; then
+                        # Extract the leading spaces from the placeholder
+                        local indent="${line%-*}"
+                        for job in "${optional_jobs[@]}"; do
+                            echo "${indent}-   ${job}"
+                        done
+                    else
+                        echo "$line"
+                    fi
+                done < "$expected" >> "$path"
             fi
         done
 
