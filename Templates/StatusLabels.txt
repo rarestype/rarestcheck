@@ -13,9 +13,11 @@ Tests/tvOS: 🍏 Darwin (tvOS)
 Tests/visionOS: 🍏 Darwin (visionOS)
 Tests/watchOS: 🍏 Darwin (watchOS)
 Tests/Android: 🤖 Android
+Tests/WebAssembly: 🌐 WebAssembly
 
 SemanticRelease/macOS: 💝 macOS
 SemanticRelease/Linux-server: 💝 Linux (graviton)
 SemanticRelease/Linux-aarch64: 💝 Linux (aarch64)
 SemanticRelease/Linux-x86_64: 💝 Linux (x86_64)
+SemanticRelease/WebAssembly: 💝 WebAssembly
 SemanticRelease/_all: 💝 Release
