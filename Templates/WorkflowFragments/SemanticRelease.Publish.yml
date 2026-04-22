@@ -5,7 +5,7 @@
             -   __OPTIONAL_JOBS__
 
         if: needs.release.outputs.type != 'none'
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04-arm
         env:
             # toggle to 'false' to only push the tag and skip creating the GitHub Release
             CREATE_RELEASE: 'true'
