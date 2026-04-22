@@ -18,25 +18,25 @@
                 with:
                     archive: rarestcheck.tar.gz
 
+            -   name: ⚡ Configure git ⚡
+                run: |
+                    git config user.name "rarest automation"
+                    git config user.email "automation@noreply.rarestype.com"
+
             -   name: ⚡ Run README hook ⚡
                 run: |
                     if [ -f README.md ]; then
                         rarestcheck README.md \
                             --repo ${{ github.repository }}
                             --version ${{ needs.release.outputs.version }}
+
+                        git add README.md
                     fi
 
             -   name: ⚡ Create tag ⚡
                 run: |
-                    git config user.name "rarest automation"
-                    git config user.email "automation@noreply.rarestype.com"
-
-                    # if the associated PR contains changes to workflow files, there is a small
-                    # chance that the release will fail due to GitHub permissions issues
-                    # we work around this by introducing a
-
-                    git add README.md
                     # if the pre-release script modified anything but the README, abort release
+                    git diff --exit-code
 
                     git commit \
                         --allow-empty \
