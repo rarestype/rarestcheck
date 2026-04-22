@@ -1,3 +1,6 @@
+Audit/emails: 🔐 Audit (emails)
+Sync: 💞 Autosync
+
 Documentation/_all: 💬 Documentation
 Documentation/Linux:
 Documentation/macOS:
