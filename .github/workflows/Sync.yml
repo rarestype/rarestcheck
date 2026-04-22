@@ -4,8 +4,6 @@ permissions:
     contents: write
 on:
     workflow_dispatch:
-    push:
-        branches: [ master ]
     # run this once a day
     schedule:
         - cron: "52 6 * * *"
@@ -22,6 +20,11 @@ jobs:
                 run: gh auth setup-git
                 env:
                     GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
+
+            -   name: 💞 Install rarestcheck tool 💞
+                uses: rarestype/r2-install-action@v1
+                with:
+                    archive: rarestcheck.tar.gz
 
             -   name: 💞 Synchronize templates 💞
                 run: Scripts/SyncAll --push
