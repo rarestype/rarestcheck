@@ -13,13 +13,38 @@
             -   name: ⚡ Checkout repository ⚡
                 uses: actions/checkout@v6
 
+            -   name: ⚡ Install rarestcheck tool ⚡
+                uses: rarestype/r2-install-action@v1
+                with:
+                    archive: rarestcheck.tar.gz
+
+            -   name: ⚡ Run README hook ⚡
+                run: |
+                    if [ -f README.md ]; then
+                        rarestcheck README.md \
+                            --repo ${{ github.repository }}
+                            --version ${{ needs.release.outputs.version }}
+                    fi
+
             -   name: ⚡ Create tag ⚡
                 run: |
                     git config user.name "rarest automation"
                     git config user.email "automation@noreply.rarestype.com"
 
+                    # if the associated PR contains changes to workflow files, there is a small
+                    # chance that the release will fail due to GitHub permissions issues
+                    # we work around this by introducing a
+
+                    git add README.md
+                    # if the pre-release script modified anything but the README, abort release
+
+                    git commit \
+                        --allow-empty \
+                        -m "[release]: ${{ needs.release.outputs.version }}"
+
                     git tag "${{ needs.release.outputs.version }}"
                     git push origin "${{ needs.release.outputs.version }}"
+                    git push
 
             -   name: ⚡ Create release ⚡
                 if: env.CREATE_RELEASE == 'true'

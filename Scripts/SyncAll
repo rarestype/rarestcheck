@@ -35,6 +35,7 @@ sync() (
     if [ "$is_private" == "true" ]; then
         local target_namespace="refs/badges/ci/*"
     else
+        local is_private='false'
         local target_namespace="refs/tags/badges/ci/*"
     fi
 
@@ -191,10 +192,10 @@ sync() (
 
     # sync README.md, if present
     if [ -f README.md ]; then
-        python3 ../../Scripts/SyncReadme.py "$2" \
-            --readme README.md \
+        rarestcheck sync-readme README.md \
             --labels "$1/StatusLabels.txt" \
-            --is-private "$is_private"
+            --repo "$2" \
+            --repo-is-private "$is_private"
         git add README.md
     fi
 
