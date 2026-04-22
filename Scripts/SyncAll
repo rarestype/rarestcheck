@@ -14,7 +14,7 @@ usage() {
 
 sync() (
     xcode='26.4'
-    swift='6.3'
+    swift='6.3.1'
     swift_install='rarestype/swift-install-action@v1'
 
     mkdir -p workspace/
