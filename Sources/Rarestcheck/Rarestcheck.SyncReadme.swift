@@ -180,7 +180,9 @@ extension Rarestcheck.SyncReadme {
             let keys: Set<String> = refs.reduce(into: []) {
                 guard
                 let gap: String.Index = $1.firstIndex(where: \.isWhitespace),
-                let ref: String.Index = $1[gap...].firstIndex(where: \.isLetter) else {
+                let ref: String.Index = $1[gap...].firstIndex(
+                    where: { !$0.isWhitespace }
+                ) else {
                     return
                 }
 

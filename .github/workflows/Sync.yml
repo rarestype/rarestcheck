@@ -4,8 +4,6 @@ permissions:
     contents: write
 on:
     workflow_dispatch:
-    push:
-        branches: [ master ]
     # run this once a day
     schedule:
         - cron: "52 6 * * *"
