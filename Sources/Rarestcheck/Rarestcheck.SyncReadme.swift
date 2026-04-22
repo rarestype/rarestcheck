@@ -3,7 +3,7 @@ import System_ArgumentParser
 import SystemAsync
 import SystemIO
 
-extension RarestCheck {
+extension Rarestcheck {
     struct SyncReadme {
         @Argument(
             help: "The path to the README file",
@@ -15,8 +15,13 @@ extension RarestCheck {
         ) var labels: FilePath
 
         @Option(
+            name: [.customLong("version")],
+            help: "The version identifier to inject"
+        ) var version: String?
+
+        @Option(
             name: [.customLong("repo"), .customShort("p")],
-            help: "The path to the project directory (containing Package.swift)"
+            help: "The repository identifier, owner/name"
         ) var repo: String
 
         @Flag(
@@ -25,7 +30,7 @@ extension RarestCheck {
         ) var repoIsPrivate: Bool = false
     }
 }
-extension RarestCheck.SyncReadme: AsyncParsableCommand {
+extension Rarestcheck.SyncReadme: AsyncParsableCommand {
     static var configuration: CommandConfiguration {
         .init(
             commandName: "sync-readme",
@@ -35,14 +40,43 @@ extension RarestCheck.SyncReadme: AsyncParsableCommand {
     func run() async throws {
         let readme: String = try self.readme.read()
         let table: String = try await self.table
-        let lines: [Substring] = Self.apply(to: readme.lines, id: "STATUS TABLE") {
+        var lines: [Substring] = Self.apply(to: readme.lines, id: "STATUS TABLE") {
             $0 = table.lines
         }
+
+        let snippets: FilePath.Directory = self.root / ".github" / "snippets"
+        if  snippets.exists() {
+            try snippets.walk {
+                let file: FilePath = $0 / $1
+
+                guard case "md"? = $1.extension else {
+                    return true
+                }
+
+                var content: String = try file.read()
+
+                if  let version: String = self.version {
+                    content = content.replacing("__VERSION__", with: version)
+                }
+
+                lines = Self.apply(to: lines, id: $1.stem) {
+                    $0 = content.lines
+                }
+
+                return false
+            }
+        }
+
         let content: [UInt8] = [_].init(lines.lazy.map(\.utf8).joined(separator: [0xa]))
         try self.readme.overwrite(with: content[...])
     }
 }
-extension RarestCheck.SyncReadme {
+extension Rarestcheck.SyncReadme {
+    private var root: FilePath.Directory {
+        self.readme.removingLastComponent().directory
+    }
+}
+extension Rarestcheck.SyncReadme {
     private static func apply(
         to lines: consuming [Substring],
         id: String,
@@ -86,11 +120,11 @@ extension RarestCheck.SyncReadme {
         return filtered
     }
 }
-extension RarestCheck.SyncReadme {
+extension Rarestcheck.SyncReadme {
     private var table: String {
         get async throws {
             var refs: Set<String> = try await self.refs
-            var rows: [(String, display: Substring)] = []
+            var rows: [(id: String, display: Substring)] = []
             for (badge, display): (Substring, Substring) in try self.labelsInOrder() {
                 guard
                 let ref: String = refs.remove(String.init(badge)) else {
@@ -102,9 +136,15 @@ extension RarestCheck.SyncReadme {
                 rows.append((ref, "????"))
             }
 
+            var type: String = "Platform"
+            for (ref, _): (String, _) in rows where (ref.prefix { $0 != "/" }) == "Audit" {
+                type = "Policy"
+                break
+            }
+
             var markdown: String = """
-            | Platform | Status |
-            | -------- | ------ |
+            | \(type) | Status |
+            | \(String.init(repeating: "-", count: type.count)) | ------ |
             """
 
             for (ref, display): (String, Substring) in rows {
@@ -126,9 +166,12 @@ extension RarestCheck.SyncReadme {
     }
     private var refs: Set<String> {
         get async throws {
-            let url: String = "https://github.com/\(self.repo).git"
             let git: (stdout: String, stderr: String) = try await SystemProcess.capture {
-                try SystemProcess.init(command: "git", "ls-remote", url, stdout: $1, stderr: $2)
+                try SystemProcess.init(
+                    command: "git", "-C", "\(self.root)", "ls-remote",
+                    stdout: $1,
+                    stderr: $2
+                )
             }
 
             let refsNamespace: String = self.refsNamespace

@@ -7,14 +7,14 @@ let package: Package = .init(
         .macOS(.v15)
     ],
     products: [
-        .executable(name: "rarestcheck", targets: ["RarestCheck"]),
+        .executable(name: "rarestcheck", targets: ["Rarestcheck"]),
     ],
     dependencies: [
         .package(url: "https://github.com/rarestype/swift-io", from: "1.3.1"),
     ],
     targets: [
         .executableTarget(
-            name: "RarestCheck",
+            name: "Rarestcheck",
             dependencies: [
                 .product(name: "System_ArgumentParser", package: "swift-io"),
                 .product(name: "SystemAsync", package: "swift-io"),

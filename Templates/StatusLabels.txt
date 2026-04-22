@@ -21,3 +21,6 @@ SemanticRelease/Linux-aarch64: 💝 Linux (aarch64)
 SemanticRelease/Linux-x86_64: 💝 Linux (x86_64)
 SemanticRelease/WebAssembly: 💝 WebAssembly
 SemanticRelease/_all: 💝 Release
+
+Audit/emails: 🔐 Audit (emails)
+Sync: 💞 Autosync

@@ -1,6 +1,6 @@
 import ArgumentParser
 
-@main struct RarestCheck: AsyncParsableCommand {
+@main struct Rarestcheck: AsyncParsableCommand {
     static var configuration: CommandConfiguration {
         .init(
             commandName: "rarestcheck",
