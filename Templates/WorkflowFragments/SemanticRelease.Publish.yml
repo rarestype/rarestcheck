@@ -27,7 +27,7 @@
                 run: |
                     if [ -f README.md ]; then
                         rarestcheck README.md \
-                            --repo ${{ github.repository }}
+                            --repo ${{ github.repository }} \
                             --version ${{ needs.release.outputs.version }}
 
                         git add README.md
