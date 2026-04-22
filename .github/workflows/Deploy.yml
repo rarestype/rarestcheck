@@ -1,0 +1,66 @@
+name: Deploy
+
+permissions:
+    contents: write
+on:
+    workflow_dispatch:
+        inputs:
+            version:
+                description: 'The version to deploy'
+                required: true
+                type: string
+    workflow_call:
+        inputs:
+            version:
+                description: 'The version to deploy'
+                required: true
+                type: string
+
+jobs:
+    all:
+        strategy:
+            matrix:
+                runner:
+                    -   name: "Ubuntu (aarch64)"
+                        arch: aarch64
+                        id: ubuntu-24.04-arm
+                        badge: Linux-aarch64
+
+        runs-on: ${{ matrix.runner.id }}
+        name: ${{ matrix.runner.name }}
+        steps:
+            -   name: 💝 Setup R2 💝
+                uses: rarestype/r2-setup-action@v1
+                with:
+                    cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+                    r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+                    r2-access-key: ${{ secrets.R2_ACCESS_SECRET }}
+
+            -   name: 💝 Checkout repository 💝
+                uses: actions/checkout@v6
+
+            -   name: 💝 Install Swift 💝
+                uses: rarestype/swift-install-action@v1
+                with:
+                    swift-release: 6.3-RELEASE
+
+            -   name: 💝 Build 💝
+                run: |
+                    swift build -c release \
+                        --static-swift-stdlib \
+                        --product rarestcheck
+
+            -   name: 💝 Deploy 💝
+                uses: rarestype/r2-release-action@v1
+                with:
+                    include: rarestcheck
+                    archive: rarestcheck.tar.gz
+                    version: ${{ inputs.version }}
+                    bucket: rarest
+
+            -   name: 💝 Update badge 💝
+                uses: rarestype/rarestbadge@v1
+                if: always()
+                with:
+                    badge: SemanticRelease/${{ matrix.runner.badge }}
+                    title: Release

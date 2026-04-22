@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -euo pipefail
+
+swift --version
+
+swift package dollup --allow-writing-to-package-directory
+git diff --exit-code
+
+swift build -c release --build-tests \
+    --explicit-target-dependency-import-check=error
