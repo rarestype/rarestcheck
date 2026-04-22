@@ -1,4 +1,8 @@
+/.build
+/.build.*
 /.mailmap
 
 /repositories
 /workspace
+
+/Package.resolved

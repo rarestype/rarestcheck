@@ -89,12 +89,34 @@ def generate_table_lines(repo, labels_file, is_private):
     # 3. Assemble the generated markdown table lines
     table_lines = [
         "| Platform | Status |",
-        "| -------- | ------|"
+        "| -------- | ------ |"
     ]
     table_lines.extend(rows)
     return table_lines
 
-def update_readme(readme_path, table_lines):
+def replace_autosync_block(content, block_name, content_lines):
+    """Finds the given autosync block by name and replaces its inner content."""
+    start_marker = f"<!-- DO NOT EDIT BELOW! AUTOSYNC CONTENT [{block_name}] -->"
+    end_marker = f"<!-- DO NOT EDIT ABOVE! AUTOSYNC CONTENT [{block_name}] -->"
+
+    start_idx = content.find(start_marker)
+    end_idx = content.find(end_marker)
+
+    if start_idx == -1 or end_idx == -1:
+        return content, False
+
+    # Slice up the file content and inject the new lines
+    before = content[:start_idx + len(start_marker)]
+    after = content[end_idx:]
+
+    new_content = before + "\n" + "\n".join(content_lines) + "\n" + after
+    return new_content, True
+
+def update_readme(readme_path, block_updates):
+    """
+    Reads the file once, applies a dictionary of block updates, and writes back.
+    `block_updates` should be a dict of { "BLOCK NAME": [list_of_lines] }
+    """
     try:
         with open(readme_path, "r", encoding="utf-8") as f:
             content = f.read()
@@ -102,26 +124,21 @@ def update_readme(readme_path, table_lines):
         print(f"Error: {readme_path} not found.", file=sys.stderr)
         sys.exit(1)
 
-    start_marker = "<!-- DO NOT EDIT BELOW! AUTOSYNC CONTENT [STATUS TABLE] -->"
-    end_marker = "<!-- DO NOT EDIT ABOVE! AUTOSYNC CONTENT [STATUS TABLE] -->"
+    file_was_modified = False
 
-    start_idx = content.find(start_marker)
-    end_idx = content.find(end_marker)
+    # Apply all requested block updates to the file content in memory
+    for block_name, content_lines in block_updates.items():
+        content, success = replace_autosync_block(content, block_name, content_lines)
+        if success:
+            print(f"Successfully updated [{block_name}] in {readme_path}!")
+            file_was_modified = True
+        else:
+            print(f"Note: could not find both AUTOSYNC fences for [{block_name}] in {readme_path}.", file=sys.stderr)
 
-    if start_idx == -1 or end_idx == -1:
-        print(f"Note: could not find both AUTOSYNC fences in {readme_path}.", file=sys.stderr)
-        return
-
-    # slice up the file content and inject the new table
-    before = content[:start_idx + len(start_marker)]
-    after = content[end_idx:]
-
-    new_content = before + "\n" + "\n".join(table_lines) + "\n" + after
-
-    with open(readme_path, "w", encoding="utf-8") as f:
-        f.write(new_content)
-
-    print(f"Successfully updated status table in {readme_path}!")
+    # Only write to disk if at least one block was successfully updated
+    if file_was_modified:
+        with open(readme_path, "w", encoding="utf-8") as f:
+            f.write(content)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate and inject a CI status badge table.")
@@ -138,4 +155,8 @@ if __name__ == "__main__":
     is_private = args.is_private == "true"
 
     table_lines = generate_table_lines(args.repo, args.labels, is_private)
-    update_readme(args.readme, table_lines)
+    updates = {
+        "STATUS TABLE": table_lines,
+    }
+
+    update_readme(args.readme, updates)
