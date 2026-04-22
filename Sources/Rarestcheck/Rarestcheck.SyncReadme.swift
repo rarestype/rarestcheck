@@ -201,16 +201,15 @@ extension Rarestcheck.SyncReadme {
     private func labelsInOrder() throws -> [(Substring, Substring)] {
         var labels: [(Substring, Substring)] = []
         try self.labels.readLines {
-            let string: String = .init(decoding: $0, as: Unicode.UTF8.self)
             guard
-            let colon: String.Index = string.firstIndex(of: ":") else {
+            let colon: String.Index = $0.firstIndex(of: ":") else {
                 return
             }
-            let badge: Substring = string[..<colon]
-            if  let start: String.Index = string[string.index(after: colon)...].firstIndex(
+            let badge: Substring = $0[..<colon]
+            if  let start: String.Index = $0[$0.index(after: colon)...].firstIndex(
                     where: { !$0.isWhitespace }
                 ) {
-                let value: Substring = string[start...]
+                let value: Substring = $0[start...]
                 labels.append((badge, value))
             } else {
                 labels.append((badge, ""))

@@ -11,7 +11,7 @@ let package: Package = .init(
     ],
     dependencies: [
         .package(url: "https://github.com/ordo-one/dollup", from: "1.0.5"),
-        .package(url: "https://github.com/rarestype/swift-io", from: "1.3.1"),
+        .package(url: "https://github.com/rarestype/swift-io", from: "1.4.0"),
     ],
     targets: [
         .executableTarget(
