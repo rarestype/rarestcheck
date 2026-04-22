@@ -21,6 +21,11 @@ jobs:
                 env:
                     GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
 
+            -   name: 💞 Install rarestcheck tool 💞
+                uses: rarestype/r2-install-action@v1
+                with:
+                    archive: rarestcheck.tar.gz
+
             -   name: 💞 Synchronize templates 💞
                 run: Scripts/SyncAll --push
                 env:
