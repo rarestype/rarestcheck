@@ -133,16 +133,20 @@ extension Rarestcheck.SyncReadme {
     private var table: String? {
         get async throws {
             guard
-            let labels: [(Substring, Substring)] = try self.labelsInOrder(),
+            let labels: [(Substring, Substring?)] = try self.labelsInOrder(),
             let repo: String else {
                 return nil
             }
 
             var refs: Set<String> = try await self.refs
             var rows: [(id: String, display: Substring)] = []
-            for (badge, display): (Substring, Substring) in labels {
+            for (badge, display): (Substring, Substring?) in labels {
                 guard
                 let ref: String = refs.remove(String.init(badge)) else {
+                    continue
+                }
+                guard
+                let display: Substring else {
                     continue
                 }
                 rows.append((ref, display))
@@ -217,12 +221,12 @@ extension Rarestcheck.SyncReadme {
         }
     }
 
-    private func labelsInOrder() throws -> [(Substring, Substring)]? {
+    private func labelsInOrder() throws -> [(Substring, Substring?)]? {
         guard let file: FilePath = self.labels else {
             return nil
         }
 
-        var labels: [(Substring, Substring)] = []
+        var labels: [(Substring, Substring?)] = []
         try file.readLines {
             guard
             let colon: String.Index = $0.firstIndex(of: ":") else {
@@ -235,7 +239,7 @@ extension Rarestcheck.SyncReadme {
                 let value: Substring = $0[start...]
                 labels.append((badge, value))
             } else {
-                labels.append((badge, ""))
+                labels.append((badge, nil))
             }
         }
         return labels
