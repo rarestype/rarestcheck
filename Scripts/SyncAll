@@ -251,8 +251,5 @@ done
 templates=$(realpath Templates)
 
 for id in "${organization[@]}" "${additional[@]}"; do
-    # we do not want to push to this repo itself
-    if [ "$id" != 'rarestype/rarestcheck' ]; then
-        sync "$templates" "$id"
-    fi
+    sync "$templates" "$id"
 done
