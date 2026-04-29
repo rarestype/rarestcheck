@@ -9,3 +9,5 @@ git diff --exit-code
 
 swift build -c release --build-tests \
     --explicit-target-dependency-import-check=error
+
+swift run -c release rarestcheck rarestype

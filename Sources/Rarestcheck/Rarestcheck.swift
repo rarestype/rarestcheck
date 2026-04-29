@@ -4,7 +4,7 @@ import ArgumentParser
     static var configuration: CommandConfiguration {
         .init(
             commandName: "rarestcheck",
-            subcommands: [SyncReadme.self],
+            subcommands: [IAT.self, SyncReadme.self],
         )
     }
 }
