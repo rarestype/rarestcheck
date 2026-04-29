@@ -1,3 +1,4 @@
+#if canImport(Cryptography)
 import ArgumentParser
 import Cryptography
 import GitHubAPI
@@ -46,3 +47,4 @@ extension Rarestcheck.IAT: AsyncParsableCommand {
         print(iat)
     }
 }
+#endif

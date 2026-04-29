@@ -1,3 +1,4 @@
+#if canImport(Cryptography)
 import Cryptography
 import GitHubAPI
 import GitHubClient
@@ -31,3 +32,4 @@ extension GitHub.Client<GitHub.App> {
         return access.token
     }
 }
+#endif
