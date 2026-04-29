@@ -12,6 +12,14 @@ let package: Package = .init(
     dependencies: [
         .package(url: "https://github.com/ordo-one/dollup", from: "1.0.5"),
         .package(url: "https://github.com/rarestype/swift-io", from: "1.4.0"),
+        .package(url: "https://github.com/rarestype/u", from: "1.1.0"),
+        .package(
+            url: "https://github.com/rarestype/swift-github",
+            from: "2.1.0",
+            traits: [
+                .trait(name: "Cryptography"),
+            ]
+        ),
     ],
     targets: [
         .executableTarget(
@@ -20,6 +28,11 @@ let package: Package = .init(
                 .product(name: "System_ArgumentParser", package: "swift-io"),
                 .product(name: "SystemAsync", package: "swift-io"),
                 .product(name: "SystemIO", package: "swift-io"),
+
+                .product(name: "GitHubClient", package: "swift-github"),
+                .product(name: "GitHubRSA", package: "swift-github"),
+                .product(name: "GitHubAPI", package: "swift-github"),
+                .product(name: "UnixCalendar", package: "u"),
             ]
         ),
     ]

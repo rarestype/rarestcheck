@@ -4,7 +4,16 @@ import ArgumentParser
     static var configuration: CommandConfiguration {
         .init(
             commandName: "rarestcheck",
-            subcommands: [SyncReadme.self],
+            subcommands: self.subcommands,
         )
+    }
+}
+extension Rarestcheck {
+    private static var subcommands: [any AsyncParsableCommand.Type] {
+        #if canImport(Cryptography)
+        [SyncReadme.self, IAT.self]
+        #else
+        [SyncReadme.self]
+        #endif
     }
 }

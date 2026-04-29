@@ -47,6 +47,10 @@ jobs:
 
             -   name: 💖 Run tests 💖
                 run: Scripts/TestAll
+                env:
+                    AUTOMATION_APP_CLIENT: ${{ vars.AUTOMATION_APP_CLIENT }}
+                    AUTOMATION_APP_SECRET: ${{ secrets.AUTOMATION_APP_SECRET }}
+                    AUTOMATION_APP_KEY: ${{ secrets.AUTOMATION_APP_KEY }}
 
     macOS:
         runs-on: macos-26
