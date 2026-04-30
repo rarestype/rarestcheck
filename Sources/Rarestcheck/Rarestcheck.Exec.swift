@@ -95,7 +95,7 @@ extension Rarestcheck.Exec: AsyncParsableCommand {
             case .all:
                 repos = try await api.connect {
                     var results: [String] = []
-                    for page: Int in 0... {
+                    for page: Int in 1... {
                         var q: String = "org:\(owner) fork:false"
                         if  let topic: String = self.filter {
                             q += " topic:\(topic)"
@@ -123,24 +123,23 @@ extension Rarestcheck.Exec: AsyncParsableCommand {
                 }
             case .only(let selected):
                 if  let topic: String = self.filter {
-                    var results: [String] = []
-                    for repo: String in selected {
-                        let repo: GitHub.Repo = try await api.connect {
-                            try await $0.get(
+                    repos = try await api.connect {
+                        var results: [String] = []
+                        for repo: String in selected {
+                            let repo: GitHub.Repo = try await $0.get(
                                 from: "/repos/\(owner)/\(repo)",
                                 with: authorization
                             )
+                            if  repo.topics.contains(topic) {
+                                results.append(repo.name)
+                            }
                         }
-                        if  repo.topics.contains(topic) {
-                            results.append(repo.name)
-                        }
+                        return results
                     }
-                    repos = results
                 } else {
                     repos = selected
                 }
             }
-
 
             for repo: String in repos {
                 let process: SystemProcess = try .init(
@@ -186,9 +185,15 @@ extension Rarestcheck.Exec {
         get throws {
             var namespaces: [String: InputPattern] = [:]
             try self.inputs.readLines { (line: Substring) in
-                if  line.isEmpty {
+                switch line.first {
+                case nil:
                     return
+                case "#"?:
+                    return
+                case _?:
+                    break
                 }
+
                 guard let slash: String.Index = line.firstIndex(of: "/") else {
                     throw InputPatternError.malformed(line)
                 }
@@ -199,6 +204,8 @@ extension Rarestcheck.Exec {
                 if  repo == "*" {
                     namespaces[owner] = .all
                     return
+                } else if repo.isEmpty {
+                    throw InputPatternError.malformed(line)
                 }
                 try {
                     switch consume $0 {
