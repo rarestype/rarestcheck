@@ -12,6 +12,7 @@ let package: Package = .init(
     dependencies: [
         .package(url: "https://github.com/ordo-one/dollup", from: "1.0.5"),
         .package(url: "https://github.com/rarestype/swift-io", from: "1.4.0"),
+        .package(url: "https://github.com/rarestype/ucf", from: "0.3.0"),
         .package(url: "https://github.com/rarestype/u", from: "1.1.0"),
         .package(
             url: "https://github.com/rarestype/swift-github",
@@ -33,6 +34,7 @@ let package: Package = .init(
                 .product(name: "GitHubRSA", package: "swift-github"),
                 .product(name: "GitHubAPI", package: "swift-github"),
                 .product(name: "UnixCalendar", package: "u"),
+                .product(name: "URI", package: "ucf"),
             ]
         ),
     ]

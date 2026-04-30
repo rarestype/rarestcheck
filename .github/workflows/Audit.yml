@@ -20,10 +20,15 @@ jobs:
             -   name: 💞 Checkout repository 💞
                 uses: actions/checkout@v6
 
+            -   name: 💞 Install rarestcheck tool 💞
+                uses: rarestype/r2-install-action@v1
+                with:
+                    archive: rarestcheck.tar.gz
+
             -   name: 💞 Check email addresses 💞
-                run: Scripts/CheckAll
+                run: rarestcheck exec Scripts/AdditionalRepositories --script Scripts/Check
                 env:
-                    GH_TOKEN: ${{ github.token }}
+                    AUTOMATION_PAT_FALLBACK: ${{ secrets.AUTOMATION_PAT }}
 
             -   name: 💞 Update badge 💞
                 uses: rarestype/rarestbadge@v1
