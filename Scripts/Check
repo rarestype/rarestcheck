@@ -5,10 +5,11 @@ set -euo pipefail
 mkdir -p repositories/
 cd repositories
 
-repository=${1##*/}
+owner="$1"
+repository="$2"
 
 if [ ! -d "$repository" ]; then
-    git clone -q "https://github.com/$1"
+    git clone -q "https://github.com/${owner}/${repository}"
 fi
 
 cd "$repository"
