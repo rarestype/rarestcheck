@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+gh auth setup-git
+
 mkdir -p repositories/
 cd repositories
 
