@@ -51,7 +51,7 @@ extension Rarestcheck.Exec: AsyncParsableCommand {
         var failedValidation: Bool = false
 
         for (owner, pattern): (String, InputPattern) in try self.namespaces {
-            print("💖 processing namespace: \(warn: owner)...")
+            print("💖 processing namespace: \(bold: owner)...")
 
             let authorization: GitHub.ClientAuthorization
             do {
@@ -64,8 +64,8 @@ extension Rarestcheck.Exec: AsyncParsableCommand {
                 if  let pat: GitHub.PersonalAccessToken {
                     print(
                         """
-                        \(warn: "warning:") GitHub app not installed under namespace \
-                        \(warn: owner)
+                        \(bold: "warning:") GitHub app not installed under namespace \
+                        \(bold: owner)
                         \(accent: "note:") using PAT fallback instead
                         """
                     )
@@ -74,7 +74,7 @@ extension Rarestcheck.Exec: AsyncParsableCommand {
                     print(
                         """
                         \(fail: "error:") GitHub app not installed under namespace \
-                        \(warn: owner)
+                        \(bold: owner)
                         """
                     )
                     failedScan = true

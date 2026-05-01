@@ -2,11 +2,12 @@ extension DefaultStringInterpolation {
     mutating func appendInterpolation(accent string: some CustomStringConvertible) {
         self.appendInterpolation(string: string, color: (255, 110, 195))
     }
-    mutating func appendInterpolation(warn string: some CustomStringConvertible) {
-        self.appendInterpolation(string: string, color: (255, 255, 105))
-    }
     mutating func appendInterpolation(fail string: some CustomStringConvertible) {
         self.appendInterpolation(string: string, color: (255, 110, 110))
+    }
+
+    mutating func appendInterpolation(bold string: some CustomStringConvertible) {
+        self.appendInterpolation("\u{1B}[1m\(string)\u{1B}[0m")
     }
 
     mutating func appendInterpolation(

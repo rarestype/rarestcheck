@@ -26,7 +26,7 @@ jobs:
                     archive: rarestcheck.tar.gz
 
             -   name: 💞 Check email addresses 💞
-                run: rarestcheck exec Scripts/AdditionalRepositories --script Scripts/Check
+                run: rarestcheck exec Templates/Repositories --script Scripts/Check
                 env:
                     AUTOMATION_APP_CLIENT: ${{ vars.AUTOMATION_APP_CLIENT }}
                     AUTOMATION_APP_SECRET: ${{ secrets.AUTOMATION_APP_SECRET }}
