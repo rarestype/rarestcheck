@@ -198,6 +198,8 @@ extension RarestcheckCommand {
 }
 
 #else
+import ArgumentParser
+
 protocol RarestcheckCommand {}
 extension RarestcheckCommand {
     func run() throws { throw ExitCode.failure }
