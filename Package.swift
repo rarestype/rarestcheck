@@ -42,7 +42,7 @@ let package: Package = .init(
         .target(
             name: "RarestcheckCommands",
             dependencies: [
-                .product(name: "ArgumentParser", package: "swift-io"),
+                .product(name: "System_ArgumentParser", package: "swift-io"),
                 .product(name: "SystemAsync", package: "swift-io"),
                 .product(name: "SystemIO", package: "swift-io"),
 
