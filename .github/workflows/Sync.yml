@@ -16,11 +16,6 @@ jobs:
             -   name: 💞 Checkout repository 💞
                 uses: actions/checkout@v6
 
-            -   name: 💞 Setup credentials 💞
-                run: gh auth setup-git
-                env:
-                    GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
-
             -   name: 💞 Install rarestcheck tool 💞
                 uses: rarestype/r2-install-action@v1
                 with:

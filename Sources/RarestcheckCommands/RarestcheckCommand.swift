@@ -10,7 +10,7 @@ public protocol RarestcheckCommand {
     var inputs: FilePath { get }
     var filter: String? { get }
 
-    func run(token: String, repo: GitHub.Repo) async throws -> Bool
+    func run(on repo: GitHub.Repo) async throws -> Bool
 }
 extension RarestcheckCommand {
     public func run() async throws {
@@ -124,7 +124,11 @@ extension RarestcheckCommand {
             }
 
             for repo: GitHub.Repo in repos {
-                guard try await self.run(token: token, repo: repo) else {
+                // setup environment
+                try Environment["GH_TOKEN"] &= token
+                try SystemProcess.init(command: "gh", "auth", "setup-git")()
+
+                guard try await self.run(on: repo) else {
                     failedValidation = true
                     continue
                 }

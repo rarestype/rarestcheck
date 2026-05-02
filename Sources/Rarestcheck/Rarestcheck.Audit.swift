@@ -29,16 +29,13 @@ extension Rarestcheck.Audit: AsyncParsableCommand {
     }
 }
 extension Rarestcheck.Audit: RarestcheckCommand {
-    func run(token: String, repo: GitHub.Repo) throws -> Bool {
+    func run(on repo: GitHub.Repo) throws -> Bool {
         try self.workspace.create()
         let script: FilePath = try .current / "Scripts" / "Check"
         let process: SystemProcess = try .init(
             command: "/bin/bash",
             arguments: ["\(script)", repo.owner.login, repo.name],
-            in: self.workspace,
-            with: .inherit {
-                $0["GH_TOKEN"] = token
-            }
+            in: self.workspace
         )
         switch process.status() {
         case .success:

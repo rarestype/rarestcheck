@@ -35,15 +35,7 @@ extension Rarestcheck.Sync: AsyncParsableCommand {
     }
 }
 extension Rarestcheck.Sync: RarestcheckCommand {
-    func run(token: String, repo: GitHub.Repo) async throws -> Bool {
-        let setupAuth: SystemProcess = try .init(
-            command: "gh", "auth", "setup-git",
-            with: .inherit {
-                $0["GH_TOKEN"] = token
-            }
-        )
-        try setupAuth()
-
+    func run(on repo: GitHub.Repo) async throws -> Bool {
         try self.workspace.create()
         let clone: FilePath.Directory = self.workspace / repo.name
         if try !clone.exists {
@@ -56,10 +48,7 @@ extension Rarestcheck.Sync: RarestcheckCommand {
                     "--",
                     "--quiet"
                 ],
-                in: self.workspace,
-                with: .inherit {
-                    $0["GH_TOKEN"] = token
-                }
+                in: self.workspace
             )
             try process()
         }
@@ -95,10 +84,7 @@ extension Rarestcheck.Sync: RarestcheckCommand {
             ] + (
                 self.push ? ["--push"] : []
             ),
-            in: clone,
-            with: .inherit {
-                $0["GH_TOKEN"] = token
-            }
+            in: clone
         )
         try process()
         return true
