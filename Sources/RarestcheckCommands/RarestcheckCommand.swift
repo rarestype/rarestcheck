@@ -6,30 +6,14 @@ import System_ArgumentParser
 import SystemIO
 import URI
 
-extension Rarestcheck {
-    struct Exec {
-        @Argument(
-            help: ""
-        ) var inputs: FilePath
+public protocol RarestcheckCommand {
+    var inputs: FilePath { get }
+    var filter: String? { get }
 
-        @Option(
-            name: [.customLong("script"), .customShort("e")],
-            help: "path to bash script to execute"
-        ) var script: String
-        @Option(
-            name: [.customLong("filter"), .customShort("f")],
-            help: "topic filter"
-        ) var filter: String?
-    }
+    func run(token: String, repo: GitHub.Repo) async throws -> Bool
 }
-extension Rarestcheck.Exec: AsyncParsableCommand {
-    static var configuration: CommandConfiguration {
-        .init(
-            commandName: "exec",
-        )
-    }
-
-    func run() async throws {
+extension RarestcheckCommand {
+    public func run() async throws {
         let app: GitHub.App = .init(
             nil,
             client: try Environment["AUTOMATION_APP_CLIENT"],
@@ -50,7 +34,7 @@ extension Rarestcheck.Exec: AsyncParsableCommand {
         var failedScan: Bool = false
         var failedValidation: Bool = false
 
-        for (owner, pattern): (String, InputPattern) in try self.namespaces {
+        for (owner, pattern): (String, Rarestcheck.InputPattern) in try self.namespaces {
             print("💖 processing namespace: \(bold: owner)...")
 
             let authorization: GitHub.ClientAuthorization
@@ -89,12 +73,12 @@ extension Rarestcheck.Exec: AsyncParsableCommand {
 
             /// maximum crawl width supported by GitHub
             let width: Int = 100
-            let repos: [String]
+            let repos: [GitHub.Repo]
 
             switch pattern {
             case .all:
                 repos = try await api.connect {
-                    var results: [String] = []
+                    var results: [GitHub.Repo] = []
                     for page: Int in 1... {
                         var q: String = "org:\(owner) fork:false"
                         if  let topic: String = self.filter {
@@ -112,49 +96,37 @@ extension Rarestcheck.Exec: AsyncParsableCommand {
                         // no better way to filter, as GitHub API does not support logical OR
                         for item: GitHub.Repo in search.items
                             where item.visibility == .public || !item.archived {
-                            results.append(item.name)
+                            results.append(item)
                         }
                         if  search.items.count < width {
                             break
                         }
                     }
-                    results.sort()
+                    results.sort { $0.name < $1.name }
                     return results
                 }
             case .only(let selected):
-                if  let topic: String = self.filter {
-                    repos = try await api.connect {
-                        var results: [String] = []
-                        for repo: String in selected {
-                            let repo: GitHub.Repo = try await $0.get(
-                                from: "/repos/\(owner)/\(repo)",
-                                with: authorization
-                            )
-                            if  repo.topics.contains(topic) {
-                                results.append(repo.name)
-                            }
+                repos = try await api.connect {
+                    var results: [GitHub.Repo] = []
+                    for repo: String in selected {
+                        let repo: GitHub.Repo = try await $0.get(
+                            from: "/repos/\(owner)/\(repo)",
+                            with: authorization
+                        )
+                        if  let topic: String = self.filter, repo.topics.contains(topic) {
+                            results.append(repo)
+                        } else if case nil = self.filter {
+                            results.append(repo)
                         }
-                        return results
                     }
-                } else {
-                    repos = selected
+                    return results
                 }
             }
 
-            for repo: String in repos {
-                let process: SystemProcess = try .init(
-                    command: "/bin/bash",
-                    arguments: [self.script, owner, repo],
-                    with: .inherit {
-                        $0["GH_TOKEN"] = token
-                    }
-                )
-                switch process.status() {
-                case .success:
-                    print("💞 repository \(accent: repo) contains no insecure email addresses!")
-                case .failure:
-                    print("❗ repository \(accent: repo) contains insecure email addresses!!!")
+            for repo: GitHub.Repo in repos {
+                guard try await self.run(token: token, repo: repo) else {
                     failedValidation = true
+                    continue
                 }
             }
         }
@@ -180,10 +152,10 @@ extension Rarestcheck.Exec: AsyncParsableCommand {
         }
     }
 }
-extension Rarestcheck.Exec {
-    private var namespaces: [String: InputPattern] {
+extension RarestcheckCommand {
+    private var namespaces: [String: Rarestcheck.InputPattern] {
         get throws {
-            var namespaces: [String: InputPattern] = [:]
+            var namespaces: [String: Rarestcheck.InputPattern] = [:]
             try self.inputs.readLines { (line: Substring) in
                 switch line.first {
                 case nil:
@@ -195,7 +167,7 @@ extension Rarestcheck.Exec {
                 }
 
                 guard let slash: String.Index = line.firstIndex(of: "/") else {
-                    throw InputPatternError.malformed(line)
+                    throw Rarestcheck.InputPatternError.malformed(line)
                 }
                 /// we expect these strings to be small, so copy them to liberate them from
                 /// their original content buffer
@@ -205,7 +177,7 @@ extension Rarestcheck.Exec {
                     namespaces[owner] = .all
                     return
                 } else if repo.isEmpty {
-                    throw InputPatternError.malformed(line)
+                    throw Rarestcheck.InputPatternError.malformed(line)
                 }
                 try {
                     switch consume $0 {
@@ -215,7 +187,7 @@ extension Rarestcheck.Exec {
 
                     case let incompatible:
                         $0 = incompatible
-                        throw InputPatternError.redundant(line)
+                        throw Rarestcheck.InputPatternError.redundant(line)
                     }
 
                 } (&namespaces[owner, default: .only([])])
@@ -224,8 +196,10 @@ extension Rarestcheck.Exec {
         }
     }
 }
+
 #else
-extension Rarestcheck {
-    struct Exec {}
+protocol RarestcheckCommand {}
+extension RarestcheckCommand {
+    func run() throws { throw ExitCode.failure }
 }
 #endif
