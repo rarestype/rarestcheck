@@ -11,7 +11,7 @@ let package: Package = .init(
     ],
     dependencies: [
         .package(url: "https://github.com/ordo-one/dollup", from: "1.0.5"),
-        .package(url: "https://github.com/rarestype/swift-io", from: "1.4.0"),
+        .package(url: "https://github.com/rarestype/swift-io", from: "3.0.0"),
         .package(url: "https://github.com/rarestype/ucf", from: "0.3.0"),
         .package(url: "https://github.com/rarestype/u", from: "1.1.0"),
         .package(
@@ -25,6 +25,22 @@ let package: Package = .init(
     targets: [
         .executableTarget(
             name: "Rarestcheck",
+            dependencies: [
+                .target(name: "RarestcheckCommands"),
+
+                .product(name: "System_ArgumentParser", package: "swift-io"),
+                .product(name: "SystemAsync", package: "swift-io"),
+                .product(name: "SystemIO", package: "swift-io"),
+
+                .product(name: "GitHubClient", package: "swift-github"),
+                .product(name: "GitHubRSA", package: "swift-github"),
+                .product(name: "GitHubAPI", package: "swift-github"),
+                .product(name: "UnixCalendar", package: "u"),
+                .product(name: "URI", package: "ucf"),
+            ]
+        ),
+        .target(
+            name: "RarestcheckCommands",
             dependencies: [
                 .product(name: "System_ArgumentParser", package: "swift-io"),
                 .product(name: "SystemAsync", package: "swift-io"),

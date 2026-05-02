@@ -16,20 +16,18 @@ jobs:
             -   name: 💞 Checkout repository 💞
                 uses: actions/checkout@v6
 
-            -   name: 💞 Setup credentials 💞
-                run: gh auth setup-git
-                env:
-                    GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
-
             -   name: 💞 Install rarestcheck tool 💞
                 uses: rarestype/r2-install-action@v1
                 with:
                     archive: rarestcheck.tar.gz
 
             -   name: 💞 Synchronize templates 💞
-                run: Scripts/SyncAll --push
+                run: rarestcheck sync Templates/Repositories -t autosync --push
                 env:
-                    GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
+                    AUTOMATION_APP_CLIENT: ${{ vars.AUTOMATION_APP_CLIENT }}
+                    AUTOMATION_APP_SECRET: ${{ secrets.AUTOMATION_APP_SECRET }}
+                    AUTOMATION_APP_KEY: ${{ secrets.AUTOMATION_APP_KEY }}
+                    AUTOMATION_PAT_FALLBACK: ${{ secrets.AUTOMATION_PAT }}
 
             -   name: 💞 Update badge 💞
                 uses: rarestype/rarestbadge@v1

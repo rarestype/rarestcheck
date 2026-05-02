@@ -11,7 +11,7 @@ import ArgumentParser
 extension Rarestcheck {
     private static var subcommands: [any AsyncParsableCommand.Type] {
         #if canImport(Cryptography)
-        [SyncReadme.self, Exec.self, IAT.self]
+        [SyncReadme.self, Sync.self, Audit.self]
         #else
         [SyncReadme.self]
         #endif

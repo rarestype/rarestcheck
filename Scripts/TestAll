@@ -11,5 +11,5 @@ swift build -c release --build-tests \
     --explicit-target-dependency-import-check=error
 
 if [[ $(uname) == 'Linux' ]]; then
-    swift run -c release rarestcheck iat rarestype
+    swift run -c release rarestcheck sync Templates/Repositories -t autosync
 fi

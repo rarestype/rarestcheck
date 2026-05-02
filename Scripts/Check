@@ -2,11 +2,6 @@
 
 set -euo pipefail
 
-gh auth setup-git
-
-mkdir -p repositories/
-cd repositories
-
 owner="$1"
 repository="$2"
 
