@@ -10,4 +10,6 @@ git diff --exit-code
 swift build -c release --build-tests \
     --explicit-target-dependency-import-check=error
 
-swift run -c release rarestcheck sync Templates/Repositories -t autosync
+if [[ $(uname) == 'Linux' ]]; then
+    swift run -c release rarestcheck sync Templates/Repositories -t autosync
+fi
