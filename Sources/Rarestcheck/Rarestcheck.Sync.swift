@@ -38,7 +38,6 @@ extension Rarestcheck.Sync: RarestcheckCommand {
     func run(token: String, repo: GitHub.Repo) async throws -> Bool {
         let setupAuth: SystemProcess = try .init(
             command: "gh", "auth", "setup-git",
-            in: self.workspace,
             with: .inherit {
                 $0["GH_TOKEN"] = token
             }
