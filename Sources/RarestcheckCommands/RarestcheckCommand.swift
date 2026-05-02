@@ -202,6 +202,6 @@ import ArgumentParser
 
 public protocol RarestcheckCommand {}
 extension RarestcheckCommand {
-    public func run() throws { throw ExitCode.failure }
+    public func run() async throws { throw ExitCode.failure }
 }
 #endif
