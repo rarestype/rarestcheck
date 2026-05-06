@@ -53,6 +53,8 @@ extension Rarestcheck.Sync: RarestcheckCommand {
             try process()
         }
 
+        try await self.vacuumBadges(repo: repo, clone: clone)
+
         let root: FilePath.Directory = try .current
         let templates: FilePath.Directory = root / "Templates"
         let script: FilePath = root / "Scripts" / "Sync"
@@ -137,48 +139,6 @@ extension Rarestcheck.Sync {
         return markdown
     }
 
-    private func refs(
-        repo: GitHub.Repo,
-        clone: FilePath.Directory
-    ) async throws -> Set<String> {
-        let refsNamespace: String
-
-        if case .public = repo.visibility {
-            refsNamespace = "refs/badges/ci/"
-        } else {
-            refsNamespace = "refs/tags/badges/ci/"
-        }
-
-        let git: (stdout: String, stderr: String) = try await Subprocess.capture {
-            try SystemProcess.init(
-                command: "git", "-C", "\(clone)", "ls-remote",
-                stdout: $1,
-                stderr: $2
-            )
-        }
-
-        let skip: Int = refsNamespace.count
-        let refs: [Substring] = git.stdout.split(whereSeparator: \.isNewline)
-        let keys: Set<String> = refs.reduce(into: []) {
-            guard
-            let gap: String.Index = $1.firstIndex(where: \.isWhitespace),
-            let ref: String.Index = $1[gap...].firstIndex(
-                where: { !$0.isWhitespace }
-            ) else {
-                return
-            }
-
-            let full: Substring = $1[ref...]
-
-            if  full.starts(with: refsNamespace) {
-                // let’s not hold onto a small slice of a large buffer
-                $0.insert(String.init($1[ref...].dropFirst(skip)))
-            }
-        }
-
-        return keys
-    }
-
     private func image(repo: GitHub.Repo, ref: String) throws -> String {
         repo.visibility == .public ? """
         https://raw.githubusercontent.com/\(repo.owner.login)/\(repo.name)/refs/\
@@ -208,5 +168,91 @@ extension Rarestcheck.Sync {
         }
         return labels
     }
+}
+extension Rarestcheck.Sync {
+    private func refs<T>(
+        under refsNamespace: Rarestcheck.BadgingNamespace,
+        clone: FilePath.Directory,
+        into initial: consuming T,
+        with combine: (inout T, Substring) throws -> ()
+    ) async throws -> T {
+        let git: (stdout: String, stderr: String) = try await Subprocess.capture {
+            try SystemProcess.init(
+                command: "git", "-C", "\(clone)", "ls-remote", "origin", "\(refsNamespace)/*",
+                stdout: $1,
+                stderr: $2
+            )
+        }
 
+        let refs: [Substring] = git.stdout.split(whereSeparator: \.isNewline)
+        return try refs.reduce(into: initial) {
+            guard
+            let gap: String.Index = $1.firstIndex(where: \.isWhitespace),
+            let ref: String.Index = $1[gap...].firstIndex(
+                where: { !$0.isWhitespace }
+            ) else {
+                return
+            }
+
+            try combine(&$0, $1[ref...])
+        }
+    }
+
+    private func refs(
+        repo: GitHub.Repo,
+        clone: FilePath.Directory
+    ) async throws -> Set<String> {
+        let refsNamespace: Rarestcheck.BadgingNamespace
+
+        if case .public = repo.visibility {
+            refsNamespace = .ghost
+        } else {
+            refsNamespace = .compatibility
+        }
+
+        let prefix: String = "\(refsNamespace)/"
+        let skip: Int = prefix.count
+        return try await self.refs(
+            under: refsNamespace,
+            clone: clone,
+            into: []
+        ) {
+            if  $1.starts(with: prefix) {
+                // let’s not hold onto a small slice of a large buffer
+                $0.insert(String.init($1.dropFirst(skip)))
+            }
+        }
+    }
+
+    private func vacuumBadges(
+        repo: GitHub.Repo,
+        clone: FilePath.Directory
+    ) async throws {
+        // We want to target the INVERSE of the correct namespace
+        // to clean up stale or lingering badge refs.
+        let complement: Rarestcheck.BadgingNamespace
+
+        if case .public = repo.visibility {
+            complement = .compatibility
+        } else {
+            complement = .ghost
+        }
+
+        let delete: [String] = try await self.refs(
+            under: complement,
+            clone: clone,
+            into: []
+        ) {
+            print("detected stale ref \(repo.name):\($1)...")
+            $0.append(":\($1)")
+        }
+
+        if  self.push, !delete.isEmpty {
+            try SystemProcess.init(
+                command: "git",
+                arguments: ["push", "origin"] + delete,
+                in: clone
+            )()
+        }
+    }
 }

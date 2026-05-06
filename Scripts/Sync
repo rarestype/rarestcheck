@@ -58,31 +58,6 @@ xcode='26.4'
 swift='6.3.1'
 swift_install='rarestype/swift-install-action@v1'
 
-# check the repository visibility
-is_private=$(gh repo view "$REPO" --json isPrivate --jq '.isPrivate')
-
-# vacuum any badge refs lingering under the wrong namespace, depending on repo visibility
-if [ "$is_private" == "true" ]; then
-    target_namespace="refs/badges/ci/*"
-else
-    is_private='false'
-    target_namespace="refs/tags/badges/ci/*"
-fi
-
-refs_to_delete=$(git ls-remote origin "$target_namespace" | awk '{print $2}')
-if [ -n "$refs_to_delete" ]; then
-    delete_args=""
-    for ref in $refs_to_delete; do
-        echo "detected stale ref ${NAME}:${ref}..."
-        delete_args="$delete_args :$ref"
-    done
-
-    # Only perform the remote deletion if the user passed the --push flag
-    if [ "$PUSH" = true ]; then
-        git push origin $delete_args
-    fi
-fi
-
 # sync licenses (only if repo is already marked with license)
 license=$(gh repo view "$REPO" --json licenseInfo --jq '.licenseInfo.key')
 case "$license" in
