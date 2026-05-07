@@ -79,6 +79,8 @@ extension Rarestcheck.Sync: RarestcheckCommand {
             try readme.overwrite(lines: lines)
         }
 
+        try self.syncFunding(repo: repo, clone: clone, templates: templates)
+
         let process: SystemProcess = try .init(
             command: "/bin/bash",
             arguments: [
@@ -251,6 +253,50 @@ extension Rarestcheck.Sync {
             try SystemProcess.init(
                 command: "git",
                 arguments: ["push", "origin"] + delete,
+                in: clone
+            )()
+        }
+    }
+}
+extension Rarestcheck.Sync {
+    private static var header: String {
+        """
+        #  ❣❣❣  DO NOT EDIT  ❣  THIS FILE IS AUTOMATICALLY SYNCED  ❣  DO NOT EDIT  ❣❣❣
+
+        """
+    }
+
+    private func syncFunding(
+        repo: GitHub.Repo,
+        clone: FilePath.Directory,
+        templates: FilePath.Directory
+    ) throws {
+        let file: FilePath = ".github" / "FUNDING.yml"
+        let text: String = try Self.header + (templates / "FUNDING.yml").read()
+
+        let directory: FilePath.Directory = clone / ".github"
+        let funding_yml: FilePath = directory / "FUNDING.yml"
+
+        switch repo.owner.login {
+        case "rarestype", "tayloraswift":
+            try directory.create()
+            try funding_yml.overwrite(with: text.utf8)
+
+            try SystemProcess.init(
+                command: "git",
+                arguments: ["add", "\(file)"],
+                in: clone
+            )()
+
+        default:
+            // Delete and stage the deletion if the file exists
+            guard try funding_yml.exists else  {
+                return
+            }
+
+            try SystemProcess.init(
+                command: "git",
+                arguments: ["rm", "\(file)"],
                 in: clone
             )()
         }
