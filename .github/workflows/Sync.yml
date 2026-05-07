@@ -27,7 +27,6 @@ jobs:
                     AUTOMATION_APP_CLIENT: ${{ vars.AUTOMATION_APP_CLIENT }}
                     AUTOMATION_APP_SECRET: ${{ secrets.AUTOMATION_APP_SECRET }}
                     AUTOMATION_APP_KEY: ${{ secrets.AUTOMATION_APP_KEY }}
-                    AUTOMATION_PAT_FALLBACK: ${{ secrets.AUTOMATION_PAT }}
 
             -   name: 💞 Update badge 💞
                 uses: rarestype/rarestbadge@v1
