@@ -189,12 +189,6 @@ for template in "$TEMPLATES"/Workflows/*.yml; do
     git add "$path"
 done
 
-# sync FUNDING.yml
-funding_yml=".github/FUNDING.yml"
-echo "$AUTOSYNC_HEADER" > "$funding_yml"
-cat "${TEMPLATES}/FUNDING.yml" >> "$funding_yml"
-git add "$funding_yml"
-
 # commit and push
 if ! git diff --staged --exit-code --quiet ; then
     echo "files changed!"
