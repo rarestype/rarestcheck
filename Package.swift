@@ -11,7 +11,7 @@ let package: Package = .init(
     ],
     dependencies: [
         .package(url: "https://github.com/ordo-one/dollup", from: "1.0.5"),
-        .package(url: "https://github.com/rarestype/swift-io", from: "3.0.0"),
+        .package(url: "https://github.com/rarestype/swift-io", from: "3.1.0"),
         .package(url: "https://github.com/rarestype/ucf", from: "0.3.0"),
         .package(url: "https://github.com/rarestype/u", from: "1.1.0"),
         .package(

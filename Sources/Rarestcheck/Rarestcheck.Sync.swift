@@ -79,6 +79,7 @@ extension Rarestcheck.Sync: RarestcheckCommand {
             try readme.overwrite(lines: lines)
         }
 
+        try self.syncLicense(repo: repo, clone: clone)
         try self.syncFunding(repo: repo, clone: clone, templates: templates)
 
         let process: SystemProcess = try .init(
@@ -266,37 +267,84 @@ extension Rarestcheck.Sync {
         """
     }
 
+    private func syncLicense(
+        repo: GitHub.Repo,
+        clone: FilePath.Directory,
+    ) throws {
+        guard let spdx: String = repo.license?.id else {
+            return
+        }
+
+        let LICENSE: FilePath.Component = "LICENSE"
+        let NOTICE: FilePath.Component = "NOTICE"
+
+        switch spdx {
+        case "Apache-2.0":
+            let license: String = Apache.license(author: "Diana Ma (@tayloraswift)")
+            let notice: String = Apache.notice(author: "diana ma (@tayloraswift)", repo: repo)
+
+            try (clone / LICENSE).overwrite(with: license.utf8)
+            try (clone / NOTICE).overwrite(with: notice.utf8)
+
+            try SystemProcess.init(
+                command: "git",
+                arguments: ["add", "\(LICENSE)", "\(NOTICE)"],
+                in: clone
+            )()
+
+        case "MPL-2.0":
+            let license: String = MPL.license
+
+            try (clone / LICENSE).overwrite(with: license.utf8)
+            try SystemProcess.init(
+                command: "git",
+                arguments: ["add", "\(LICENSE)"],
+                in: clone
+            )()
+
+            if  try (clone / NOTICE).exists {
+                try SystemProcess.init(
+                    command: "git",
+                    arguments: ["rm", "\(NOTICE)"],
+                    in: clone
+                )()
+            }
+
+        default:
+            break
+        }
+    }
+
     private func syncFunding(
         repo: GitHub.Repo,
         clone: FilePath.Directory,
         templates: FilePath.Directory
     ) throws {
-        let file: FilePath = ".github" / "FUNDING.yml"
-        let text: String = try Self.header + (templates / "FUNDING.yml").read()
-
-        let directory: FilePath.Directory = clone / ".github"
-        let funding_yml: FilePath = directory / "FUNDING.yml"
+        let directory: FilePath.Directory = ".github"
+        let file: FilePath.Component = "FUNDING.yml"
+        let path: FilePath = directory / file
+        let text: String = try Self.header + (templates / file).read()
 
         switch repo.owner.login {
         case "rarestype", "tayloraswift":
-            try directory.create()
-            try funding_yml.overwrite(with: text.utf8)
+            try (clone / path[...]).parent?.create()
+            try (clone / path[...]).overwrite(with: text.utf8)
 
             try SystemProcess.init(
                 command: "git",
-                arguments: ["add", "\(file)"],
+                arguments: ["add", "\(path)"],
                 in: clone
             )()
 
         default:
             // Delete and stage the deletion if the file exists
-            guard try funding_yml.exists else  {
+            guard try (clone / path[...]).exists else  {
                 return
             }
 
             try SystemProcess.init(
                 command: "git",
-                arguments: ["rm", "\(file)"],
+                arguments: ["rm", "\(path)"],
                 in: clone
             )()
         }

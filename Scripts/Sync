@@ -58,29 +58,6 @@ xcode='26.4'
 swift='6.3.1'
 swift_install='rarestype/swift-install-action@v1'
 
-# sync licenses (only if repo is already marked with license)
-license=$(gh repo view "$REPO" --json licenseInfo --jq '.licenseInfo.key')
-case "$license" in
-    "apache-2.0")
-        cp -f "$TEMPLATES"/Legal/Apache/LICENSE LICENSE
-        git add LICENSE
-
-        sed \
-            -e "s|__REPOSITORY_NAME__|${NAME}|g" \
-            -e "s|__REPOSITORY_ID__|${REPO}|g" \
-            "$TEMPLATES"/Legal/Apache/NOTICE > NOTICE
-        git add NOTICE
-        ;;
-
-    "mpl-2.0")
-        cp -f "$TEMPLATES"/Legal/MPL/LICENSE LICENSE
-        git add LICENSE
-        ;;
-
-    *)
-        ;;
-esac
-
 # sync workflows
 if [ -d .github/workflows ]; then
     # align all Swift and Xcode version numbers in (manually-written) workflows
