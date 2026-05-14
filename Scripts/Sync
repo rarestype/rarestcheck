@@ -55,7 +55,7 @@ if [[ ! -v TEMPLATES ]]; then
 fi
 
 xcode='26.4'
-swift='6.3.1'
+swift='6.3.2'
 swift_install='rarestype/swift-install-action@v1'
 
 # sync workflows
