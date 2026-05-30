@@ -54,7 +54,7 @@ if [[ ! -v TEMPLATES ]]; then
     usage
 fi
 
-xcode='26.4'
+xcode='26.5'
 swift='6.3.2'
 swift_install='rarestype/swift-install-action@v1'
 
