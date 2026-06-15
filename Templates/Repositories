@@ -2,6 +2,7 @@ rarestype/*
 ordo-one/distributions
 ordo-one/lexic
 ordo-one/ordo-format-config
+ordo-one/ordo-sdk-generator
 tayloraswift/d
 tayloraswift/dollup
 tayloraswift/swift-jpeg
