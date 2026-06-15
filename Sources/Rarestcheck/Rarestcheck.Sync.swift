@@ -77,6 +77,10 @@ extension Rarestcheck.Sync: RarestcheckCommand {
             }
 
             try readme.overwrite(lines: lines)
+            try SystemProcess.init(
+                command: "git", "add", "README.md",
+                in: clone
+            )()
         }
 
         try self.syncLicense(repo: repo, clone: clone)
@@ -287,8 +291,7 @@ extension Rarestcheck.Sync {
             try (clone / NOTICE).overwrite(with: notice.utf8)
 
             try SystemProcess.init(
-                command: "git",
-                arguments: ["add", "\(LICENSE)", "\(NOTICE)"],
+                command: "git", "add", "\(LICENSE)", "\(NOTICE)",
                 in: clone
             )()
 
@@ -297,15 +300,13 @@ extension Rarestcheck.Sync {
 
             try (clone / LICENSE).overwrite(with: license.utf8)
             try SystemProcess.init(
-                command: "git",
-                arguments: ["add", "\(LICENSE)"],
+                command: "git", "add", "\(LICENSE)",
                 in: clone
             )()
 
             if  try (clone / NOTICE).exists {
                 try SystemProcess.init(
-                    command: "git",
-                    arguments: ["rm", "\(NOTICE)"],
+                    command: "git", "rm", "\(NOTICE)",
                     in: clone
                 )()
             }
@@ -331,8 +332,7 @@ extension Rarestcheck.Sync {
             try (clone / path[...]).overwrite(with: text.utf8)
 
             try SystemProcess.init(
-                command: "git",
-                arguments: ["add", "\(path)"],
+                command: "git", "add", "\(path)",
                 in: clone
             )()
 
@@ -343,8 +343,7 @@ extension Rarestcheck.Sync {
             }
 
             try SystemProcess.init(
-                command: "git",
-                arguments: ["rm", "\(path)"],
+                command: "git", "rm", "\(path)",
                 in: clone
             )()
         }
