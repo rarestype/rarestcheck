@@ -67,6 +67,9 @@ class LSPClient:
                 body = self.proc.stdout.read(length).decode("utf-8", errors="ignore")
                 data = json.loads(body)
                 if data.get("id") == target_id:
+                    if "error" in data:
+                        print(f"LSP Error: {data['error']}", file=sys.stderr)
+                        return None
                     return data.get("result")
 
     def _initialize(self):
@@ -88,12 +91,32 @@ class LSPClient:
         self._read_response(req_id)
         self._notify("initialized", {})
 
+    def _ensure_open(self, abs_path: str):
+        if os.path.exists(abs_path):
+            try:
+                with open(abs_path, "r", encoding="utf-8") as f:
+                    text = f.read()
+                self._notify(
+                    "textDocument/didOpen",
+                    {
+                        "textDocument": {
+                            "uri": f"file://{abs_path}",
+                            "languageId": "swift",
+                            "version": 1,
+                            "text": text,
+                        }
+                    },
+                )
+            except Exception:
+                pass
+
     def query_workspace_symbols(self, query: str) -> Any:
         req_id = self._send("workspace/symbol", {"query": query})
         return self._read_response(req_id)
 
     def query_definition(self, file_path: str, line: int, col: int) -> Any:
         abs_path = os.path.abspath(file_path)
+        self._ensure_open(abs_path)
         req_id = self._send(
             "textDocument/definition",
             {
@@ -105,6 +128,7 @@ class LSPClient:
 
     def query_hover(self, file_path: str, line: int, col: int) -> Any:
         abs_path = os.path.abspath(file_path)
+        self._ensure_open(abs_path)
         req_id = self._send(
             "textDocument/hover",
             {
@@ -116,6 +140,7 @@ class LSPClient:
 
     def query_references(self, file_path: str, line: int, col: int) -> Any:
         abs_path = os.path.abspath(file_path)
+        self._ensure_open(abs_path)
         req_id = self._send(
             "textDocument/references",
             {
@@ -133,7 +158,13 @@ class LSPClient:
             self._notify("exit")
         except Exception:
             pass
-        self.proc.terminate()
+        finally:
+            if self.proc.poll() is None:
+                self.proc.terminate()
+                try:
+                    self.proc.wait(timeout=1)
+                except subprocess.TimeoutExpired:
+                    self.proc.kill()
 
 def main():
     parser = argparse.ArgumentParser(description="Query sourcekit-lsp for Swift symbols")
