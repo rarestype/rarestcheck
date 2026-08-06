@@ -85,6 +85,7 @@ extension Rarestcheck.Sync: RarestcheckCommand {
 
         try self.syncLicense(repo: repo, clone: clone)
         try self.syncFunding(repo: repo, clone: clone, templates: templates)
+        try self.syncResources(repo: repo, clone: clone, templates: templates)
 
         let process: SystemProcess = try .init(
             command: "/bin/bash",
@@ -264,6 +265,12 @@ extension Rarestcheck.Sync {
     }
 }
 extension Rarestcheck.Sync {
+    private static var headerHTML: String {
+        """
+        <!-- ❣❣❣  DO NOT EDIT  ❣  THIS FILE IS AUTOMATICALLY SYNCED  ❣  DO NOT EDIT  ❣❣❣ -->
+
+        """
+    }
     private static var header: String {
         """
         #  ❣❣❣  DO NOT EDIT  ❣  THIS FILE IS AUTOMATICALLY SYNCED  ❣  DO NOT EDIT  ❣❣❣
@@ -347,5 +354,37 @@ extension Rarestcheck.Sync {
                 in: clone
             )()
         }
+    }
+
+    private func syncResources(
+        repo _: GitHub.Repo,
+        clone: FilePath.Directory,
+        templates: FilePath.Directory
+    ) throws {
+        let tools: FilePath.Directory = ".github" / "tools"
+        let agents: FilePath.Component = "AGENTS.md"
+
+        let source: FilePath.Directory = templates / "Tools"
+        let target: FilePath.Directory = clone / tools.components
+        try target.create(clean: true)
+
+        try source.walk {
+            let file: FilePath = $0 / $1
+            let text: String = "\(Self.header)\(try file.read())"
+            try (target / $1).overwrite(with: text.utf8)
+        } directory: { (_, _) in
+            nil
+        }
+
+        do {
+            let base: String = try (templates / agents).read()
+            let text: String = "\(Self.headerHTML)\(base)"
+            try (clone / agents).overwrite(with: text.utf8)
+        }
+
+        try SystemProcess.init(
+            command: "git", "add", "\(agents)", "\(tools)",
+            in: clone
+        )()
     }
 }
