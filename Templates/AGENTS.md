@@ -21,23 +21,23 @@ To perform semantic symbol lookup, go-to-definition, hover type resolution, or r
 #### Search workspace symbols
 
 ```bash
-./Scripts/lsp_query.py symbol <SymbolName>
+.github/tools/lsp_query.py symbol <SymbolName>
 ```
 
 #### Go to definition
 
 ```bash
-./Scripts/lsp_query.py definition <path/to/File.swift> <line> <column>
+.github/tools/lsp_query.py definition <path/to/file.swift> <line> <column>
 ```
 
 #### Hover / type documentation
 
 ```bash
-./Scripts/lsp_query.py hover <path/to/File.swift> <line> <column>
+.github/tools/lsp_query.py hover <path/to/file.swift> <line> <column>
 ```
 
 #### Find references
 
 ```bash
-./Scripts/lsp_query.py references <path/to/File.swift> <line> <column>
+.github/tools/lsp_query.py references <path/to/file.swift> <line> <column>
 ```
