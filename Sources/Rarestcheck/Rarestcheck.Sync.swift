@@ -361,21 +361,30 @@ extension Rarestcheck.Sync {
         clone: FilePath.Directory,
         templates: FilePath.Directory
     ) throws {
-        let tools: FilePath.Directory = ".github" / "tools"
-        let agents: FilePath.Component = "AGENTS.md"
+        let autosync: FilePath.Component = "autosync"
+        let tools: FilePath.Component = "tools"
+        let outer: FilePath.Directory = clone / ".github"
+
+        for directory: FilePath.Component in [autosync, tools] {
+            try (outer / directory).create(clean: true)
+        }
 
         let source: FilePath.Directory = templates / "Tools"
-        let target: FilePath.Directory = clone / tools.components
-        try target.create(clean: true)
-
         try source.walk {
             let file: FilePath = $0 / $1
             let text: String = "\(Self.header)\(try file.read())"
-            try (target / $1).overwrite(with: text.utf8)
+            try (outer / tools / $1).overwrite(with: text.utf8)
         } directory: { (_, _) in
             nil
         }
 
+        for skip: FilePath.Component in ["Skip.txt", "SkipDocumentation.txt"] {
+            let file: FilePath = templates / skip
+            let text: String = try file.read()
+            try (outer / autosync / skip).overwrite(with: text.utf8)
+        }
+
+        let agents: FilePath.Component = "AGENTS.md"
         do {
             let base: String = try (templates / agents).read()
             let text: String = "\(Self.headerHTML)\(base)"
@@ -383,7 +392,7 @@ extension Rarestcheck.Sync {
         }
 
         try SystemProcess.init(
-            command: "git", "add", "\(agents)", "\(tools)",
+            command: "git", "add", "\(agents)", ".github",
             in: clone
         )()
     }
