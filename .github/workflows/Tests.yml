@@ -20,13 +20,8 @@ jobs:
                 uses: tj-actions/changed-files@v47
                 id: changes
                 with:
+                    files_ignore_from_source_file: .github/autosync/Skip.txt
                     files_ignore: |
-                        README.md
-                        LICENSE
-                        NOTICE
-                        .mailmap
-                        .gitignore
-                        .github/FUNDING.yml
                         Scripts/AdditionalRepositories
         outputs:
             code_changed: ${{ steps.changes.outputs.any_changed }}
