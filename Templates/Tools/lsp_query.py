@@ -105,10 +105,6 @@ class LSPClient:
                             },
                         },
                     },
-                    "experimental": {
-                        "workspace/getReferenceDocument": {"version": 1},
-                        "sourcekit/workspace/getReferenceDocument": {"version": 1},
-                    },
                 },
             },
         )
@@ -210,6 +206,17 @@ class LSPClient:
                 "type": "lsp_command",
             })
         return expansions
+
+    @staticmethod
+    def _dedup_expansions(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        dedup = []
+        seen = set()
+        for item in items:
+            key = (item.get("header"), item.get("expansion"))
+            if key not in seen:
+                seen.add(key)
+                dedup.append(item)
+        return dedup
 
     def query_expand(self, file_path: str, line: Optional[int] = None, col: Optional[int] = None) -> Any:
         abs_path = os.path.abspath(file_path)
@@ -331,15 +338,7 @@ class LSPClient:
             i += 2
 
         if line is None:
-            # Deduplicate by header and expansion
-            dedup = []
-            seen = set()
-            for exp in expansions:
-                key = (exp["header"], exp["expansion"])
-                if key not in seen:
-                    seen.add(key)
-                    dedup.append(exp)
-            return dedup
+            return self._dedup_expansions(expansions)
 
         # Match freestanding: MX<line-1> or MX<line>
         freestanding_matches = []
@@ -355,14 +354,7 @@ class LSPClient:
                         "type": "freestanding",
                     })
         if freestanding_matches:
-            dedup = []
-            seen = set()
-            for exp in freestanding_matches:
-                key = (exp["header"], exp["expansion"])
-                if key not in seen:
-                    seen.add(key)
-                    dedup.append(exp)
-            return dedup
+            return self._dedup_expansions(freestanding_matches)
 
         # Match attached macros by declared symbol name
         m_decl = re.search(r"\b(?:var|let|func|enum|struct|class|actor|protocol)\s+([A-Za-z_][A-Za-z0-9_]*)", target_line_text)
@@ -380,14 +372,7 @@ class LSPClient:
                         "type": "attached",
                     })
             if decl_matches:
-                dedup = []
-                seen = set()
-                for exp in decl_matches:
-                    key = (exp["header"], exp["expansion"])
-                    if key not in seen:
-                        seen.add(key)
-                        dedup.append(exp)
-                return dedup
+                return self._dedup_expansions(decl_matches)
 
         # Fallback to matching any non-keyword identifier on the line
         keywords = {
@@ -413,14 +398,7 @@ class LSPClient:
                     })
 
         if attached_matches:
-            dedup = []
-            seen = set()
-            for exp in attached_matches:
-                key = (exp["header"], exp["expansion"])
-                if key not in seen:
-                    seen.add(key)
-                    dedup.append(exp)
-            return dedup
+            return self._dedup_expansions(attached_matches)
 
         return expansions
 
