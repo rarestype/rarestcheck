@@ -8,3 +8,6 @@
 /workspace
 
 /Package.resolved
+
+/Scripts/SampleProject/.build
+/Scripts/SampleProject/Package.resolved

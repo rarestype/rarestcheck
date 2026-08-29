@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SourceKit-LSP Helper Script for Swift Symbol Resolution.
-Provides CLI access to workspace symbols, definitions, hover type info, and references.
+SourceKit-LSP Helper Script for Swift Symbol Resolution and Macro Expansion.
+Provides CLI access to workspace symbols, definitions, hover type info, references, and macro expansion.
 """
 
 import sys
@@ -10,7 +10,8 @@ import json
 import subprocess
 import shutil
 import argparse
-from typing import Dict, Any, Optional
+import re
+from typing import Dict, Any, Optional, List
 
 def find_sourcekit_lsp() -> str:
     path = shutil.which("sourcekit-lsp")
@@ -79,11 +80,34 @@ class LSPClient:
                 "processId": os.getpid(),
                 "rootUri": f"file://{self.root_dir}",
                 "capabilities": {
-                    "workspace": {"symbol": {"dynamicRegistration": False}},
+                    "workspace": {
+                        "symbol": {"dynamicRegistration": False},
+                        "executeCommand": {"dynamicRegistration": False},
+                    },
                     "textDocument": {
                         "definition": {"dynamicRegistration": False},
                         "references": {"dynamicRegistration": False},
                         "hover": {"dynamicRegistration": False},
+                        "codeAction": {
+                            "dynamicRegistration": False,
+                            "codeActionLiteralSupport": {
+                                "codeActionKind": {
+                                    "valueSet": [
+                                        "",
+                                        "quickfix",
+                                        "refactor",
+                                        "refactor.extract",
+                                        "refactor.inline",
+                                        "refactor.rewrite",
+                                        "source",
+                                    ]
+                                }
+                            },
+                        },
+                    },
+                    "experimental": {
+                        "workspace/getReferenceDocument": {"version": 1},
+                        "sourcekit/workspace/getReferenceDocument": {"version": 1},
                     },
                 },
             },
@@ -151,6 +175,193 @@ class LSPClient:
         )
         return self._read_response(req_id)
 
+    def query_expand(self, file_path: str, line: Optional[int] = None, col: Optional[int] = None) -> Any:
+        abs_path = os.path.abspath(file_path)
+        if not os.path.exists(abs_path):
+            return {"error": f"File not found: {abs_path}"}
+
+        self._ensure_open(abs_path)
+
+        # 1. Try LSP codeAction / executeCommand if position is provided
+        if line is not None and col is not None:
+            req_id = self._send(
+                "textDocument/codeAction",
+                {
+                    "textDocument": {"uri": f"file://{abs_path}"},
+                    "range": {
+                        "start": {"line": line - 1, "character": max(0, col - 1)},
+                        "end": {"line": line - 1, "character": col},
+                    },
+                    "context": {"diagnostics": []},
+                },
+            )
+            actions = self._read_response(req_id)
+            if actions:
+                for action in actions:
+                    title = action.get("title", "")
+                    if "expand" in title.lower() or "macro" in title.lower():
+                        if "edit" in action:
+                            return action["edit"]
+                        if "command" in action:
+                            cmd_req = self._send("workspace/executeCommand", action["command"])
+                            cmd_res = self._read_response(cmd_req)
+                            if cmd_res:
+                                return cmd_res
+
+            # Try expand.macro.command directly
+            req_id = self._send(
+                "workspace/executeCommand",
+                {
+                    "command": "expand.macro.command",
+                    "arguments": [
+                        {
+                            "textDocument": {"uri": f"file://{abs_path}"},
+                            "position": {"line": line - 1, "character": col - 1},
+                        }
+                    ],
+                },
+            )
+            res = self._read_response(req_id)
+            if res:
+                return res
+
+        # 2. Extract macro expansions via compiler frontend
+        return self._dump_macro_expansions(abs_path, line)
+
+    def _dump_macro_expansions(self, abs_path: str, line: Optional[int] = None) -> List[Dict[str, Any]]:
+        target_line_text = ""
+        try:
+            with open(abs_path, "r", encoding="utf-8") as f:
+                file_lines = f.readlines()
+            if line is not None and 0 <= line - 1 < len(file_lines):
+                target_line_text = file_lines[line - 1].strip()
+        except Exception:
+            pass
+
+        # Touch the file to ensure swiftc re-analyzes it during dump
+        try:
+            os.utime(abs_path, None)
+        except Exception:
+            pass
+
+        cmd = ["swift", "build"]
+        if "/Tests/" in abs_path or abs_path.endswith("Tests.swift"):
+            cmd.append("--build-tests")
+        cmd.extend(["-Xswiftc", "-Xfrontend", "-Xswiftc", "-dump-macro-expansions"])
+
+        try:
+            res = subprocess.run(cmd, cwd=self.root_dir, capture_output=True, text=True, timeout=60)
+            out = res.stdout + "\n" + res.stderr
+        except Exception as e:
+            return [{"error": f"Failed to dump macro expansions: {e}"}]
+
+        blocks = out.split("------------------------------\n")
+        expansions = []
+        i = 0
+        while i < len(blocks) - 1:
+            raw_header = blocks[i].strip()
+            body = blocks[i + 1].rstrip()
+            header_lines = [l.strip() for l in raw_header.splitlines() if l.strip()]
+            macro_header = header_lines[-1] if header_lines else raw_header
+
+            if body and not body.isspace() and not body.startswith("#"):
+                expansions.append({"header": macro_header, "expansion": body})
+            i += 2
+
+        if line is None:
+            # Deduplicate by header and expansion
+            dedup = []
+            seen = set()
+            for exp in expansions:
+                key = (exp["header"], exp["expansion"])
+                if key not in seen:
+                    seen.add(key)
+                    dedup.append(exp)
+            return dedup
+
+        # Match freestanding: MX<line-1> or MX<line>
+        freestanding_matches = []
+        for exp in expansions:
+            m = re.search(r"MX(\d+)_(\d+)_", exp["header"])
+            if m:
+                m_l = int(m.group(1))
+                if m_l == line or m_l == line - 1:
+                    freestanding_matches.append({
+                        "header": exp["header"],
+                        "expansion": exp["expansion"],
+                        "line": line,
+                        "type": "freestanding",
+                    })
+        if freestanding_matches:
+            dedup = []
+            seen = set()
+            for exp in freestanding_matches:
+                key = (exp["header"], exp["expansion"])
+                if key not in seen:
+                    seen.add(key)
+                    dedup.append(exp)
+            return dedup
+
+        # Match attached macros by declared symbol name
+        m_decl = re.search(r"\b(?:var|let|func|enum|struct|class|actor|protocol)\s+([A-Za-z_][A-Za-z0-9_]*)", target_line_text)
+        decl_name = m_decl.group(1) if m_decl else None
+        if decl_name:
+            decl_matches = []
+            for exp in expansions:
+                h = exp["header"]
+                if f"{len(decl_name)}{decl_name}" in h or f"_{decl_name}" in h or f"{decl_name}0" in h or f"{decl_name}O" in h or f"{decl_name}V" in h:
+                    decl_matches.append({
+                        "header": exp["header"],
+                        "expansion": exp["expansion"],
+                        "matched_symbol": decl_name,
+                        "line": line,
+                        "type": "attached",
+                    })
+            if decl_matches:
+                dedup = []
+                seen = set()
+                for exp in decl_matches:
+                    key = (exp["header"], exp["expansion"])
+                    if key not in seen:
+                        seen.add(key)
+                        dedup.append(exp)
+                return dedup
+
+        # Fallback to matching any non-keyword identifier on the line
+        keywords = {
+            "var", "let", "func", "enum", "struct", "class", "public", "private",
+            "fileprivate", "internal", "open", "inlinable", "mutating", "nonmutating",
+            "get", "set", "where", "import", "case", "switch", "default", "return",
+            "self", "Self", "some", "any", "async", "throws",
+        }
+        identifiers = [
+            ident for ident in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", target_line_text)
+            if ident not in keywords and len(ident) > 1
+        ]
+        attached_matches = []
+        for ident in identifiers:
+            for exp in expansions:
+                if ident in exp["header"]:
+                    attached_matches.append({
+                        "header": exp["header"],
+                        "expansion": exp["expansion"],
+                        "matched_symbol": ident,
+                        "line": line,
+                        "type": "attached",
+                    })
+
+        if attached_matches:
+            dedup = []
+            seen = set()
+            for exp in attached_matches:
+                key = (exp["header"], exp["expansion"])
+                if key not in seen:
+                    seen.add(key)
+                    dedup.append(exp)
+            return dedup
+
+        return expansions
+
     def close(self):
         try:
             req_id = self._send("shutdown")
@@ -167,7 +378,7 @@ class LSPClient:
                     self.proc.kill()
 
 def main():
-    parser = argparse.ArgumentParser(description="Query sourcekit-lsp for Swift symbols")
+    parser = argparse.ArgumentParser(description="Query sourcekit-lsp for Swift symbols and macro expansion")
     parser.add_argument("--dir", default=os.getcwd(), help="Workspace root directory")
     subparsers = parser.add_subparsers(dest="subcommand", required=True)
 
@@ -193,6 +404,12 @@ def main():
     ref_parser.add_argument("line", type=int, help="Line number (1-indexed)")
     ref_parser.add_argument("col", type=int, help="Column number (1-indexed)")
 
+    # expand subcommand
+    expand_parser = subparsers.add_parser("expand", help="Expand macro at position or in file")
+    expand_parser.add_argument("file", help="File path")
+    expand_parser.add_argument("line", type=int, nargs="?", default=None, help="Line number (1-indexed, optional)")
+    expand_parser.add_argument("col", type=int, nargs="?", default=None, help="Column number (1-indexed, optional)")
+
     args = parser.parse_args()
 
     client = LSPClient(root_dir=args.dir)
@@ -205,6 +422,8 @@ def main():
             res = client.query_hover(args.file, args.line, args.col)
         elif args.subcommand == "references":
             res = client.query_references(args.file, args.line, args.col)
+        elif args.subcommand == "expand":
+            res = client.query_expand(args.file, args.line, args.col)
         else:
             res = None
         print(json.dumps(res, indent=2))
