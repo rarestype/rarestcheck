@@ -3,31 +3,38 @@
 set -euo pipefail
 
 tool="Templates/Tools/lsp_query.py"
-sample="Sources/Rarestcheck/Rarestcheck.swift"
 macro_dir="Scripts/SampleProject"
 macro_sample="${macro_dir}/Sources/Sample/main.swift"
 
-echo "testing agent tooling (${tool})..."
+echo "testing agent tooling (${tool}) on real tokens in ${macro_sample}..."
 
-# Test help
+# 1. Test help
 python3 "$tool" --help > /dev/null
 
-# Test workspace symbol query
-python3 "$tool" --dir . symbol Rarestcheck | jq empty
+# 2. Test workspace symbol query
+python3 "$tool" --dir "$macro_dir" symbol Color | jq empty
 
-# Test definition lookup
-python3 "$tool" --dir . definition "$sample" 1 1 | jq empty
+# 3. Test definition lookup (Color type reference at line 18, col 9)
+def_out=$(python3 "$tool" --dir "$macro_dir" definition "$macro_sample" 18 9)
+echo "$def_out" | jq -e '.[0].uri and .[0].range' > /dev/null
 
-# Test hover documentation lookup
-python3 "$tool" --dir . hover "$sample" 1 1 | jq empty
+# 4. Test hover documentation lookup (enum Color declaration at line 4, col 6)
+hover_out=$(python3 "$tool" --dir "$macro_dir" hover "$macro_sample" 4 6)
+echo "$hover_out" | jq -e '.contents.value | contains("enum Color")' > /dev/null
 
-# Test reference searching
-python3 "$tool" --dir . references "$sample" 1 1 | jq empty
+# 5. Test hover documentation lookup (property name declaration at line 9, col 20)
+hover_prop=$(python3 "$tool" --dir "$macro_dir" hover "$macro_sample" 9 20)
+echo "$hover_prop" | jq -e '.contents.value | contains("var name: String")' > /dev/null
 
-# Test macro expansion / previewing on attached macro (@Bijection)
-python3 "$tool" --dir "$macro_dir" expand "$macro_sample" 9 10 | jq empty
+# 6. Test reference searching
+python3 "$tool" --dir "$macro_dir" references "$macro_sample" 4 6 | jq empty
 
-# Test macro expansion / previewing on freestanding macro (#assert)
-python3 "$tool" --dir "$macro_dir" expand "$macro_sample" 18 1 | jq empty
+# 7. Test macro expansion / previewing on attached macro (@Bijection at line 9, col 6)
+expand_attached=$(python3 "$tool" --dir "$macro_dir" expand "$macro_sample" 9 6)
+echo "$expand_attached" | jq -e '.[0].expansion | contains("init?(_ $value: borrowing String)")' > /dev/null
 
-echo "agent tooling tests passed!"
+# 8. Test macro expansion / previewing on freestanding macro (#assert at line 18, col 1)
+expand_free=$(python3 "$tool" --dir "$macro_dir" expand "$macro_sample" 18 1)
+echo "$expand_free" | jq -e '.[0].expansion | contains("fatalError")' > /dev/null
+
+echo "agent tooling tests passed with real tokens!"
