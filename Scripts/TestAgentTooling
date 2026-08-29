@@ -8,6 +8,9 @@ macro_sample="${macro_dir}/Sources/Sample/main.swift"
 
 echo "testing agent tooling (${tool}) on real tokens in ${macro_sample}..."
 
+# 0. Ensure sample project is built so its dependencies and macro plugins are ready
+swift build --package-path "$macro_dir"
+
 # 1. Test help
 python3 "$tool" --help > /dev/null
 
@@ -31,10 +34,10 @@ python3 "$tool" --dir "$macro_dir" references "$macro_sample" 4 6 | jq empty
 
 # 7. Test macro expansion / previewing on attached macro (@Bijection at line 9, col 6)
 expand_attached=$(python3 "$tool" --dir "$macro_dir" expand "$macro_sample" 9 6)
-echo "$expand_attached" | jq -e '.[0].expansion | contains("init?(_ $value: borrowing String)")' > /dev/null
+echo "$expand_attached" | jq -e 'any(.[]; (.expansion // "") | contains("init?(_ $value: borrowing String)"))' > /dev/null
 
 # 8. Test macro expansion / previewing on freestanding macro (#assert at line 18, col 1)
 expand_free=$(python3 "$tool" --dir "$macro_dir" expand "$macro_sample" 18 1)
-echo "$expand_free" | jq -e '.[0].expansion | contains("fatalError")' > /dev/null
+echo "$expand_free" | jq -e 'any(.[]; (.expansion // "") | contains("fatalError"))' > /dev/null
 
 echo "agent tooling tests passed with real tokens!"

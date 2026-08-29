@@ -175,10 +175,46 @@ class LSPClient:
         )
         return self._read_response(req_id)
 
+    def _extract_expansions_from_edit(self, edit: Any, header: str, line: Optional[int]) -> List[Dict[str, Any]]:
+        expansions = []
+        if isinstance(edit, dict):
+            if "changes" in edit and isinstance(edit["changes"], dict):
+                for uri, text_edits in edit["changes"].items():
+                    for te in text_edits:
+                        new_text = te.get("newText", "").strip()
+                        if new_text:
+                            expansions.append({
+                                "header": header or uri,
+                                "expansion": new_text,
+                                "line": line,
+                                "type": "lsp_code_action",
+                            })
+            if "documentChanges" in edit and isinstance(edit["documentChanges"], list):
+                for doc_change in edit["documentChanges"]:
+                    edits = doc_change.get("edits", [])
+                    uri = doc_change.get("textDocument", {}).get("uri", "")
+                    for te in edits:
+                        new_text = te.get("newText", "").strip()
+                        if new_text:
+                            expansions.append({
+                                "header": header or uri,
+                                "expansion": new_text,
+                                "line": line,
+                                "type": "lsp_code_action",
+                            })
+        elif isinstance(edit, str) and edit.strip():
+            expansions.append({
+                "header": header or "Macro Expansion",
+                "expansion": edit.strip(),
+                "line": line,
+                "type": "lsp_command",
+            })
+        return expansions
+
     def query_expand(self, file_path: str, line: Optional[int] = None, col: Optional[int] = None) -> Any:
         abs_path = os.path.abspath(file_path)
         if not os.path.exists(abs_path):
-            return {"error": f"File not found: {abs_path}"}
+            return [{"error": f"File not found: {abs_path}"}]
 
         self._ensure_open(abs_path)
 
@@ -201,12 +237,16 @@ class LSPClient:
                     title = action.get("title", "")
                     if "expand" in title.lower() or "macro" in title.lower():
                         if "edit" in action:
-                            return action["edit"]
+                            res = self._extract_expansions_from_edit(action["edit"], title, line)
+                            if res:
+                                return res
                         if "command" in action:
                             cmd_req = self._send("workspace/executeCommand", action["command"])
                             cmd_res = self._read_response(cmd_req)
                             if cmd_res:
-                                return cmd_res
+                                res = self._extract_expansions_from_edit(cmd_res, title, line)
+                                if res:
+                                    return res
 
             # Try expand.macro.command directly
             req_id = self._send(
@@ -221,14 +261,27 @@ class LSPClient:
                     ],
                 },
             )
-            res = self._read_response(req_id)
-            if res:
-                return res
+            cmd_res = self._read_response(req_id)
+            if cmd_res:
+                res = self._extract_expansions_from_edit(cmd_res, "Expand Macro", line)
+                if res:
+                    return res
 
         # 2. Extract macro expansions via compiler frontend
         return self._dump_macro_expansions(abs_path, line)
 
     def _dump_macro_expansions(self, abs_path: str, line: Optional[int] = None) -> List[Dict[str, Any]]:
+        # Check if project has been built first
+        build_dir = os.path.join(self.root_dir, ".build")
+        if not os.path.isdir(build_dir):
+            return [{
+                "error": (
+                    f"Project build directory '{build_dir}' not found. "
+                    "Please build the project ('swift build' or 'swift test') first so that build artifacts "
+                    "and macro plugins are available."
+                )
+            }]
+
         target_line_text = ""
         try:
             with open(abs_path, "r", encoding="utf-8") as f:
@@ -244,13 +297,22 @@ class LSPClient:
         except Exception:
             pass
 
-        cmd = ["swift", "build"]
+        cmd = ["swift", "build", "--skip-update"]
         if "/Tests/" in abs_path or abs_path.endswith("Tests.swift"):
             cmd.append("--build-tests")
         cmd.extend(["-Xswiftc", "-Xfrontend", "-Xswiftc", "-dump-macro-expansions"])
 
         try:
             res = subprocess.run(cmd, cwd=self.root_dir, capture_output=True, text=True, timeout=60)
+            if res.returncode != 0:
+                err = res.stderr.strip() or res.stdout.strip()
+                return [{
+                    "error": (
+                        f"Failed to dump macro expansions (exit code {res.returncode}). "
+                        "Please ensure the project builds successfully ('swift build' or 'swift test') first.\n"
+                        f"Build output:\n{err}"
+                    )
+                }]
             out = res.stdout + "\n" + res.stderr
         except Exception as e:
             return [{"error": f"Failed to dump macro expansions: {e}"}]
