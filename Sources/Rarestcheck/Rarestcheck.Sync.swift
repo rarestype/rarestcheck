@@ -371,9 +371,22 @@ extension Rarestcheck.Sync {
 
         let source: FilePath.Directory = templates / "Tools"
         try source.walk {
+            let destination: FilePath = outer / tools / $1
             let file: FilePath = $0 / $1
-            let text: String = "\(Self.header)\(try file.read())"
-            try (outer / tools / $1).overwrite(with: text.utf8)
+            let text: String = try file.read()
+            if  text.starts(with: "#!"),
+                let newline: String.Index = text.firstIndex(of: "\n") {
+                let content: String = """
+                \(text[...newline])\
+                \(Self.header)\
+                \(text[text.index(after: newline)...])
+                """
+
+                try destination.overwrite(with: content.utf8, permissions: (.rwx, .rx, .rx))
+            } else {
+                let content: String = "\(Self.header)\(text)"
+                try destination.overwrite(with: content.utf8)
+            }
         } directory: { (_, _) in
             nil
         }

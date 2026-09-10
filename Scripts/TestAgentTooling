@@ -11,8 +11,9 @@ echo "testing agent tooling (${tool}) on real tokens in ${macro_sample}..."
 # 0. Ensure sample project is built so its dependencies and macro plugins are ready
 swift build --package-path "$macro_dir"
 
-# 1. Test help
-python3 "$tool" --help > /dev/null
+# 1. Test help (including direct execution via shebang)
+"$tool" --help > /dev/null
+.github/tools/lsp_query.py --help > /dev/null
 
 # 2. Test workspace symbol query
 python3 "$tool" --dir "$macro_dir" symbol Color | jq empty
