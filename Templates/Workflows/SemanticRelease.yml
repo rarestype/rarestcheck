@@ -1,5 +1,9 @@
 name: Semantic release
 
+concurrency:
+    group: semantic-release
+    cancel-in-progress: false
+
 permissions:
     contents: write
     actions: read
@@ -29,13 +33,14 @@ jobs:
                 uses: actions/download-artifact@v4
                 with:
                     name: bump-metadata
+                    path: ${{ runner.temp }}
                     run-id: ${{ github.event.workflow_run.id }}
                     github-token: ${{ secrets.GITHUB_TOKEN }}
 
             -   name: ⚡ Increment version ⚡
                 id: increment
                 run: |
-                    BUMP_TYPE=$(cat bump.txt)
+                    BUMP_TYPE=$(cat "${{ runner.temp }}/bump.txt")
 
                     LATEST_VERSION=$(git tag | sed -E -n 's/^v//; /^[0-9]+\.[0-9]+\.[0-9]+$/p' | sort -V | tail -n 1)
 
@@ -56,6 +61,9 @@ jobs:
                         PATCH=0
                     elif [ "$BUMP_TYPE" == "patch" ]; then
                         PATCH=$((PATCH + 1))
+                    else
+                        echo "::error::Unrecognized bump type: '$BUMP_TYPE'" >&2
+                        exit 1
                     fi
 
                     NEXT_VERSION="${MAJOR}.${MINOR}.${PATCH}"

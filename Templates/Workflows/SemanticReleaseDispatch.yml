@@ -10,8 +10,7 @@ on:
 jobs:
     dispatch:
         name: Dispatch release
-        # ensures this only runs if the PR was actually merged,
-        # and has a recognized bump specifier
+        # ensures this only runs if the PR was actually merged, and has a recognized bump specifier
         if: >-
             github.event.pull_request.merged == true &&
             (
@@ -26,16 +25,19 @@ jobs:
                     TITLE: ${{ github.event.pull_request.title }}
                 run: |
                     if [[ "$TITLE" =~ ^\[major\] ]]; then
-                        echo "major" > bump.txt
+                        echo "major" > "${{ runner.temp }}/bump.txt"
                     elif [[ "$TITLE" =~ ^\[minor\] ]]; then
-                        echo "minor" > bump.txt
+                        echo "minor" > "${{ runner.temp }}/bump.txt"
                     elif [[ "$TITLE" =~ ^\[patch\] ]]; then
-                        echo "patch" > bump.txt
+                        echo "patch" > "${{ runner.temp }}/bump.txt"
+                    else
+                        echo "::error::Unrecognized or non-standard bump prefix in title: $TITLE" >&2
+                        exit 1
                     fi
 
             -   name: ⚡ Upload bump artifact ⚡
                 uses: actions/upload-artifact@v4
                 with:
                     name: bump-metadata
-                    path: bump.txt
-                    retention-days: 1
+                    path: ${{ runner.temp }}/bump.txt
+                    retention-days: 14
