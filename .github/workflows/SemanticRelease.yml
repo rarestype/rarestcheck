@@ -44,7 +44,9 @@ jobs:
                 run: |
                     BUMP_TYPE=$(cat "${{ runner.temp }}/bump.txt")
 
-                    LATEST_VERSION=$(git tag | sed -E -n 's/^v//; /^[0-9]+\.[0-9]+\.[0-9]+$/p' | sort -V | tail -n 1)
+                    LATEST_VERSION=$(git tag | \
+                        sed -E -n 's/^v//; /^[0-9]+\.[0-9]+\.[0-9]+$/p' | \
+                        sort -V | tail -n 1)
 
                     if [ -z "$LATEST_VERSION" ]; then
                         LATEST_VERSION="0.0.0"

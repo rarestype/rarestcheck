@@ -12,7 +12,8 @@ on:
 jobs:
     dispatch:
         name: Dispatch release
-        # ensures this only runs if the PR was actually merged, and has a recognized bump specifier
+        # ensures this only runs if the PR was actually merged,
+        # and has a recognized bump specifier
         if: >-
             github.event.pull_request.merged == true &&
             (
@@ -33,7 +34,7 @@ jobs:
                     elif [[ "$TITLE" =~ ^\[patch\] ]]; then
                         echo "patch" > "${{ runner.temp }}/bump.txt"
                     else
-                        echo "::error::Unrecognized or non-standard bump prefix in title: $TITLE" >&2
+                        echo "::error::Invalid bump prefix in title: '$TITLE'" >&2
                         exit 1
                     fi
 
