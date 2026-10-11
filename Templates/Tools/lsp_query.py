@@ -73,6 +73,15 @@ class LSPClient:
         self.proc.stdin.flush()
 
     def _read_response(self, target_id: int) -> Optional[Dict[str, Any]]:
+        reply = self._read_reply(target_id)
+        if reply is None:
+            return None
+        if "error" in reply:
+            print(f"LSP Error: {reply['error']}", file=sys.stderr)
+            return None
+        return reply.get("result")
+
+    def _read_reply(self, target_id: int) -> Optional[Dict[str, Any]]:
         while True:
             line = self.proc.stdout.readline().decode("utf-8", errors="ignore")
             if not line:
@@ -85,10 +94,7 @@ class LSPClient:
                 body = self.proc.stdout.read(length).decode("utf-8", errors="ignore")
                 data = json.loads(body)
                 if data.get("id") == target_id:
-                    if "error" in data:
-                        print(f"LSP Error: {data['error']}", file=sys.stderr)
-                        return None
-                    return data.get("result")
+                    return data
 
     def _initialize(self):
         req_id = self._send(
@@ -127,6 +133,22 @@ class LSPClient:
         )
         self._read_response(req_id)
         self._notify("initialized", {})
+        self.indexed = self._synchronize()
+
+    def _synchronize(self) -> bool:
+        """
+        Waits for sourcekit-lsp to finish background indexing. Without this, every query races
+        the indexer, and the process exits (killing the indexer) before it finishes, so
+        index-backed queries silently return stale or empty results for recent code.
+        """
+        print("Waiting for sourcekit-lsp to finish indexing...", file=sys.stderr)
+        req_id = self._send("workspace/synchronize", {"index": True})
+        reply = self._read_reply(req_id)
+        if reply is None or "error" in reply:
+            error = None if reply is None else reply["error"]
+            print(f"warning: could not wait for indexing: {error}", file=sys.stderr)
+            return False
+        return True
 
     def _ensure_open(self, abs_path: str):
         if abs_path in self._opened_files:
@@ -482,6 +504,14 @@ def main():
 
     client = LSPClient(root_dir=args.dir)
     try:
+        if not client.indexed and args.subcommand in ("symbol", "definition", "references"):
+            print(
+                f"error: '{args.subcommand}' needs an up-to-date index, and sourcekit-lsp "
+                "could not provide one, so any results would be unreliable",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+
         if args.subcommand == "symbol":
             res = client.query_workspace_symbols(args.query)
         elif args.subcommand == "definition":
