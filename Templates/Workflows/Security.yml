@@ -28,6 +28,11 @@ jobs:
                         "@icloud\.com"
                         "@sasktel\.net"
                         "@anthropic\.com"
+                        "@openai\.com"
+                        "@alibabacloud\.com"
+                        "@alibaba-inc\.com"
+                        "@google\.com"
+                        "google-labs-jules\[bot\]@"
                     )
                     blacklist_pattern=$(IFS="|"; echo "${blacklisted_domains[*]}")
 
