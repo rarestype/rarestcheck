@@ -405,7 +405,7 @@ class LSPClient:
         except Exception:
             pass
 
-        cmd = ["swift", "build", "--skip-update"]
+        cmd = ["swift", "build", "--skip-update", "--build-system", "native"]
         if "/Tests/" in abs_path or abs_path.endswith("Tests.swift"):
             cmd.append("--build-tests")
         cmd.extend(["-Xswiftc", "-Xfrontend", "-Xswiftc", "-dump-macro-expansions"])

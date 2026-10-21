@@ -34,6 +34,10 @@ extension Rarestcheck {
             name: [.customLong("xcode-version")],
             help: "Xcode version"
         ) var xcodeVersion: String?
+        @Option(
+            name: [.customLong("macos-runner")],
+            help: "macOS runner label"
+        ) var macosRunner: String?
 
 
         @Flag(
@@ -434,7 +438,8 @@ extension Rarestcheck.Sync {
     ) throws {
         if  case nil = self.swiftInstallVersion,
             case nil = self.swiftVersion,
-            case nil = self.xcodeVersion {
+            case nil = self.xcodeVersion,
+            case nil = self.macosRunner {
             return
         }
 
@@ -448,12 +453,16 @@ extension Rarestcheck.Sync {
             install: Regex<Substring>,
             release: Regex<Substring>,
             xcodeSpaceASCII: Regex<Substring>,
-            xcodeUnderscore: Regex<Substring>
+            xcodeUnderscore: Regex<Substring>,
+            runsOn: Regex<Substring>,
+            matrixId: Regex<Substring>
         ) = (
             install: try .init("uses: \(Self.swift_install_action)@[^\\s]+"),
             release: /swift-release:\s+["']?\d+\.\d+(?:\.\d+)?-RELEASE["']?/,
             xcodeSpaceASCII: /Xcode \d+(?:\.\d+)?/,
-            xcodeUnderscore: /Xcode_\d+(?:\.\d+)?/
+            xcodeUnderscore: /Xcode_\d+(?:\.\d+)?/,
+            runsOn: /runs-on:\s*["']?(?:macos-\d+|xcode-\d+)["']?/,
+            matrixId: /id:\s*["']?(?:macos-\d+|xcode-\d+)["']?/
         )
 
         var modified: Bool = false
@@ -484,6 +493,10 @@ extension Rarestcheck.Sync {
             if  let xcode: String = self.xcodeVersion {
                 content.replace(pattern.xcodeSpaceASCII, with: "Xcode \(xcode)")
                 content.replace(pattern.xcodeUnderscore, with: "Xcode_\(xcode)")
+            }
+            if  let runner: String = self.macosRunner {
+                content.replace(pattern.runsOn, with: "runs-on: \(runner)")
+                content.replace(pattern.matrixId, with: "id: \(runner)")
             }
 
             if  content != original {

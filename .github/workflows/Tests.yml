@@ -48,15 +48,15 @@ jobs:
                     AUTOMATION_APP_KEY: ${{ secrets.AUTOMATION_APP_KEY }}
 
     macOS:
-        runs-on: macos-26
+        runs-on: xcode-27
         needs: changes
         if: needs.changes.outputs.code_changed == 'true'
         steps:
             -   name: 💖 Checkout repository 💖
                 uses: actions/checkout@v6
 
-            -   name: 💖 Select Xcode 26.6 💖
-                run: sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
+            -   name: 💖 Select Xcode 27.1 💖
+                run: sudo xcode-select -s /Applications/Xcode_27.1.app/Contents/Developer
 
             -   name: 💖 Run tests 💖
                 run: Scripts/TestAll
