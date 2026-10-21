@@ -42,12 +42,13 @@ jobs:
             -   name: 💝 Install Swift 💝
                 uses: rarestype/swift-install-action@v1
                 with:
-                    swift-release: 6.3.3-RELEASE
+                    swift-release: 6.4.1-RELEASE
 
             -   name: 💝 Build 💝
                 run: |
                     swift build -c release \
                         --static-swift-stdlib \
+                        -Xswiftc -static-stdlib \
                         --product rarestcheck
 
             -   name: 💝 Deploy 💝

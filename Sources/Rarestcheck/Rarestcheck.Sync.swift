@@ -86,6 +86,7 @@ extension Rarestcheck.Sync: RarestcheckCommand {
         try self.syncLicense(repo: repo, clone: clone)
         try self.syncFunding(repo: repo, clone: clone, templates: templates)
         try self.syncResources(repo: repo, clone: clone, templates: templates)
+        try self.syncToolchains(clone: clone)
 
         let process: SystemProcess = try .init(
             command: "/bin/bash",
@@ -408,5 +409,80 @@ extension Rarestcheck.Sync {
             command: "git", "add", "\(agents)", ".github",
             in: clone
         )()
+    }
+
+    private static let swiftVersion: String = "6.4.1"
+    private static let xcodeVersion: String = "26.6"
+    private static let swiftInstallAction: String = "rarestype/swift-install-action@v1"
+
+    private func syncToolchains(
+        clone: FilePath.Directory
+    ) throws {
+        let workflows: FilePath.Directory = clone / ".github" / "workflows"
+        if  try !workflows.exists {
+            try workflows.create()
+            return
+        }
+
+        let patternSwiftInstall: Regex<AnyRegexOutput> = try .init(
+            #"uses: rarestype/swift-install-action@[^\s]+"#
+        )
+        let patternSwiftRelease: Regex<AnyRegexOutput> = try .init(
+            #"swift-release:\s+["']?\d+\.\d+(?:\.\d+)?-RELEASE["']?"#
+        )
+        let patternSwiftReleaseLower: Regex<AnyRegexOutput> = try .init(
+            #"swift-\d+\.\d+(?:\.\d+)?-release"#
+        )
+        let patternSwiftReleaseUpper: Regex<AnyRegexOutput> = try .init(
+            #"swift-\d+\.\d+(?:\.\d+)?-RELEASE"#
+        )
+        let patternXcodeSpace: Regex<AnyRegexOutput> = try .init(
+            #"Xcode \d+(?:\.\d+)?"#
+        )
+        let patternXcodeUnderscore: Regex<AnyRegexOutput> = try .init(
+            #"Xcode_\d+(?:\.\d+)?"#
+        )
+
+        var modified: Bool = false
+
+        try workflows.walk { (parent: FilePath.Directory, component: FilePath.Component) in
+            guard case "yml"? = component.extension else {
+                return
+            }
+
+            let file: FilePath = parent / component
+            let original: String = try file.read()
+            var content: String = original
+
+            content.replace(patternSwiftInstall, with: "uses: \(Self.swiftInstallAction)")
+            content.replace(
+                patternSwiftRelease,
+                with: "swift-release: \(Self.swiftVersion)-RELEASE"
+            )
+            content.replace(
+                patternSwiftReleaseLower,
+                with: "swift-\(Self.swiftVersion)-release"
+            )
+            content.replace(
+                patternSwiftReleaseUpper,
+                with: "swift-\(Self.swiftVersion)-RELEASE"
+            )
+            content.replace(patternXcodeSpace, with: "Xcode \(Self.xcodeVersion)")
+            content.replace(patternXcodeUnderscore, with: "Xcode_\(Self.xcodeVersion)")
+
+            if  content != original {
+                try file.overwrite(with: content.utf8)
+                modified = true
+            }
+        } directory: { (_, _) in
+            nil
+        }
+
+        if  modified {
+            try SystemProcess.init(
+                command: "git", "add", ".github/workflows",
+                in: clone
+            )()
+        }
     }
 }

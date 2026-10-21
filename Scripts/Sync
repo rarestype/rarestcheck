@@ -54,30 +54,7 @@ if [[ ! -v TEMPLATES ]]; then
     usage
 fi
 
-xcode='26.6'
-swift='6.3.3'
-swift_install='rarestype/swift-install-action@v1'
-
-# sync workflows
-if [ -d .github/workflows ]; then
-    # align all Swift and Xcode version numbers in (manually-written) workflows
-    pattern_minor='[[:digit:]]+(\.[[:digit:]]+)?'
-    pattern_patch='[[:digit:]]+\.[[:digit:]]+(\.[[:digit:]]+)?'
-    pattern_swift_install='uses: rarestype/swift-install-action@[^[:space:]]+'
-    pattern_swift_release="swift-release:[[:space:]]+[\"']?${pattern_patch}-RELEASE[\"']?"
-
-    for path in .github/workflows/*.yml; do
-        sed -i -E \
-            -e "s|${pattern_swift_install}|uses: ${swift_install}|g" \
-            -e "s|${pattern_swift_release}|swift-release: ${swift}-RELEASE|g" \
-            -e "s/swift-${pattern_patch}-release/swift-${swift}-release/g" \
-            -e "s/swift-${pattern_patch}-RELEASE/swift-${swift}-RELEASE/g" \
-            -e "s/Xcode ${pattern_minor}/Xcode ${xcode}/g" \
-            -e "s/Xcode_${pattern_minor}/Xcode_${xcode}/g" "$path"
-
-        git add "$path"
-    done
-else
+if [ ! -d .github/workflows ]; then
     mkdir -p .github/workflows
 fi
 
