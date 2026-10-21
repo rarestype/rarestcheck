@@ -21,6 +21,21 @@ extension Rarestcheck {
             help: "workspace directory"
         ) var workspace: FilePath.Directory = "workspace"
 
+
+        @Option(
+            name: [.customLong("swift-install-version")],
+            help: "Swift install version"
+        ) var swiftInstallVersion: String?
+        @Option(
+            name: [.customLong("swift-version")],
+            help: "Swift version"
+        ) var swiftVersion: String?
+        @Option(
+            name: [.customLong("xcode-version")],
+            help: "Xcode version"
+        ) var xcodeVersion: String?
+
+
         @Flag(
             name: [.customLong("push"), .customShort("f")],
             help: "whether to push changes"
@@ -410,65 +425,66 @@ extension Rarestcheck.Sync {
             in: clone
         )()
     }
-
-    private static let swiftVersion: String = "6.4.1"
-    private static let xcodeVersion: String = "26.6"
-    private static let swiftInstallAction: String = "rarestype/swift-install-action@v1"
+}
+extension Rarestcheck.Sync {
+    private static var swift_install_action: String { "rarestype/swift-install-action" }
 
     private func syncToolchains(
         clone: FilePath.Directory
     ) throws {
-        let workflows: FilePath.Directory = clone / ".github" / "workflows"
-        if  try !workflows.exists {
-            try workflows.create()
+        if  case nil = self.swiftInstallVersion,
+            case nil = self.swiftVersion,
+            case nil = self.xcodeVersion {
             return
         }
 
-        let patternSwiftInstall: Regex<AnyRegexOutput> = try .init(
-            #"uses: rarestype/swift-install-action@[^\s]+"#
-        )
-        let patternSwiftRelease: Regex<AnyRegexOutput> = try .init(
-            #"swift-release:\s+["']?\d+\.\d+(?:\.\d+)?-RELEASE["']?"#
-        )
-        let patternSwiftReleaseLower: Regex<AnyRegexOutput> = try .init(
-            #"swift-\d+\.\d+(?:\.\d+)?-release"#
-        )
-        let patternSwiftReleaseUpper: Regex<AnyRegexOutput> = try .init(
-            #"swift-\d+\.\d+(?:\.\d+)?-RELEASE"#
-        )
-        let patternXcodeSpace: Regex<AnyRegexOutput> = try .init(
-            #"Xcode \d+(?:\.\d+)?"#
-        )
-        let patternXcodeUnderscore: Regex<AnyRegexOutput> = try .init(
-            #"Xcode_\d+(?:\.\d+)?"#
+        let workflows: FilePath.Directory = clone / ".github" / "workflows"
+        guard
+        try workflows.exists else {
+            return
+        }
+
+        let pattern: (
+            install: Regex<Substring>,
+            release: Regex<Substring>,
+            xcodeSpaceASCII: Regex<Substring>,
+            xcodeUnderscore: Regex<Substring>
+        ) = (
+            install: try .init("uses: \(Self.swift_install_action)@[^\\s]+"),
+            release: /swift-release:\s+["']?\d+\.\d+(?:\.\d+)?-RELEASE["']?/,
+            xcodeSpaceASCII: /Xcode \d+(?:\.\d+)?/,
+            xcodeUnderscore: /Xcode_\d+(?:\.\d+)?/
         )
 
         var modified: Bool = false
-
-        try workflows.walk { (parent: FilePath.Directory, component: FilePath.Component) in
-            guard case "yml"? = component.extension else {
+        try workflows.walk {
+            guard case "yml"? = $1.extension else {
                 return
             }
 
-            let file: FilePath = parent / component
+            let file: FilePath = $0 / $1
             let original: String = try file.read()
             var content: String = original
 
-            content.replace(patternSwiftInstall, with: "uses: \(Self.swiftInstallAction)")
-            content.replace(
-                patternSwiftRelease,
-                with: "swift-release: \(Self.swiftVersion)-RELEASE"
-            )
-            content.replace(
-                patternSwiftReleaseLower,
-                with: "swift-\(Self.swiftVersion)-release"
-            )
-            content.replace(
-                patternSwiftReleaseUpper,
-                with: "swift-\(Self.swiftVersion)-RELEASE"
-            )
-            content.replace(patternXcodeSpace, with: "Xcode \(Self.xcodeVersion)")
-            content.replace(patternXcodeUnderscore, with: "Xcode_\(Self.xcodeVersion)")
+            if  let tag: String = self.swiftInstallVersion {
+                if !tag.starts(with: "v") {
+                    print("warning: swift-install-action tag '\(tag)' does not start with 'v'")
+                }
+                content.replace(
+                    pattern.install,
+                    with: "uses: \(Self.swift_install_action)@\(tag)"
+                )
+            }
+            if  let swift: String = self.swiftVersion {
+                content.replace(
+                    pattern.release,
+                    with: "swift-release: \(swift)-RELEASE"
+                )
+            }
+            if  let xcode: String = self.xcodeVersion {
+                content.replace(pattern.xcodeSpaceASCII, with: "Xcode \(xcode)")
+                content.replace(pattern.xcodeUnderscore, with: "Xcode_\(xcode)")
+            }
 
             if  content != original {
                 try file.overwrite(with: content.utf8)

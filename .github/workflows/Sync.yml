@@ -22,7 +22,12 @@ jobs:
                     archive: rarestcheck.tar.gz
 
             -   name: 💞 Synchronize templates 💞
-                run: rarestcheck sync Templates/Repositories -t autosync --push
+                run: |
+                    rarestcheck sync Templates/Repositories -t autosync \
+                        --swift-install-version 'v1' \
+                        --swift-version '6.4.1' \
+                        --xcode-version '27.1' \
+                        --push
                 env:
                     AUTOMATION_APP_CLIENT: ${{ vars.AUTOMATION_APP_CLIENT }}
                     AUTOMATION_APP_SECRET: ${{ secrets.AUTOMATION_APP_SECRET }}
