@@ -463,6 +463,10 @@ extension Rarestcheck.Sync {
             runsOn: /runs-on:\s*["']?(?:macos-\d+|xcode-\d+)["']?/
         )
 
+        if  let tag: String = self.swiftInstallVersion, !tag.starts(with: "v") {
+            print("warning: swift-install-action tag '\(tag)' does not start with 'v'")
+        }
+
         var modified: Bool = false
         try workflows.walk {
             guard case "yml"? = $1.extension else {
@@ -474,9 +478,6 @@ extension Rarestcheck.Sync {
             var content: String = original
 
             if  let tag: String = self.swiftInstallVersion {
-                if !tag.starts(with: "v") {
-                    print("warning: swift-install-action tag '\(tag)' does not start with 'v'")
-                }
                 content.replace(
                     pattern.install,
                     with: "uses: \(Self.swift_install_action)@\(tag)"

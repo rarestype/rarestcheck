@@ -152,6 +152,8 @@ if ! git diff --staged --exit-code --quiet ; then
     git commit -m "[autosync]"
     if [ "$PUSH" = true ]; then
         git push
+    else
+        git show HEAD
     fi
 
     echo "💞 synchronized repository ${REPO}!"
