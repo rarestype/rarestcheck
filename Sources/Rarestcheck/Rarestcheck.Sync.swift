@@ -21,6 +21,25 @@ extension Rarestcheck {
             help: "workspace directory"
         ) var workspace: FilePath.Directory = "workspace"
 
+
+        @Option(
+            name: [.customLong("swift-install-version")],
+            help: "Swift install version"
+        ) var swiftInstallVersion: String?
+        @Option(
+            name: [.customLong("swift-version")],
+            help: "Swift version"
+        ) var swiftVersion: String?
+        @Option(
+            name: [.customLong("xcode-version")],
+            help: "Xcode version"
+        ) var xcodeVersion: String?
+        @Option(
+            name: [.customLong("macOS-runner")],
+            help: "macOS runner label"
+        ) var macOSRunner: String?
+
+
         @Flag(
             name: [.customLong("push"), .customShort("f")],
             help: "whether to push changes"
@@ -86,6 +105,7 @@ extension Rarestcheck.Sync: RarestcheckCommand {
         try self.syncLicense(repo: repo, clone: clone)
         try self.syncFunding(repo: repo, clone: clone, templates: templates)
         try self.syncResources(repo: repo, clone: clone, templates: templates)
+        try self.syncToolchains(clone: clone)
 
         let process: SystemProcess = try .init(
             command: "/bin/bash",
@@ -408,5 +428,88 @@ extension Rarestcheck.Sync {
             command: "git", "add", "\(agents)", ".github",
             in: clone
         )()
+    }
+}
+extension Rarestcheck.Sync {
+    private static var swift_install_action: String { "rarestype/swift-install-action" }
+
+    private func syncToolchains(
+        clone: FilePath.Directory
+    ) throws {
+        if  case nil = self.swiftInstallVersion,
+            case nil = self.swiftVersion,
+            case nil = self.xcodeVersion,
+            case nil = self.macOSRunner {
+            return
+        }
+
+        let workflows: FilePath.Directory = clone / ".github" / "workflows"
+        guard
+        try workflows.exists else {
+            return
+        }
+
+        let pattern: (
+            install: Regex<Substring>,
+            release: Regex<Substring>,
+            xcodeSpaceASCII: Regex<Substring>,
+            xcodeUnderscore: Regex<Substring>,
+            runsOn: Regex<Substring>
+        ) = (
+            install: try .init("uses: \(Self.swift_install_action)@[^\\s]+"),
+            release: /swift-release:\s+["']?\d+\.\d+(?:\.\d+)?-RELEASE["']?/,
+            xcodeSpaceASCII: /Xcode \d+(?:\.\d+)?/,
+            xcodeUnderscore: /Xcode_\d+(?:\.\d+)?/,
+            runsOn: /runs-on:\s*["']?(?:macos-\d+|xcode-\d+)["']?/
+        )
+
+        if  let tag: String = self.swiftInstallVersion, !tag.starts(with: "v") {
+            print("warning: swift-install-action tag '\(tag)' does not start with 'v'")
+        }
+
+        var modified: Bool = false
+        try workflows.walk {
+            guard case "yml"? = $1.extension else {
+                return
+            }
+
+            let file: FilePath = $0 / $1
+            let original: String = try file.read()
+            var content: String = original
+
+            if  let tag: String = self.swiftInstallVersion {
+                content.replace(
+                    pattern.install,
+                    with: "uses: \(Self.swift_install_action)@\(tag)"
+                )
+            }
+            if  let swift: String = self.swiftVersion {
+                content.replace(
+                    pattern.release,
+                    with: "swift-release: \(swift)-RELEASE"
+                )
+            }
+            if  let xcode: String = self.xcodeVersion {
+                content.replace(pattern.xcodeSpaceASCII, with: "Xcode \(xcode)")
+                content.replace(pattern.xcodeUnderscore, with: "Xcode_\(xcode)")
+            }
+            if  let runner: String = self.macOSRunner {
+                content.replace(pattern.runsOn, with: "runs-on: \(runner)")
+            }
+
+            if  content != original {
+                try file.overwrite(with: content.utf8)
+                modified = true
+            }
+        } directory: { (_, _) in
+            nil
+        }
+
+        if  modified {
+            try SystemProcess.init(
+                command: "git", "add", ".github/workflows",
+                in: clone
+            )()
+        }
     }
 }
