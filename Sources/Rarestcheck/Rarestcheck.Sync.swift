@@ -454,15 +454,13 @@ extension Rarestcheck.Sync {
             release: Regex<Substring>,
             xcodeSpaceASCII: Regex<Substring>,
             xcodeUnderscore: Regex<Substring>,
-            runsOn: Regex<Substring>,
-            matrixId: Regex<Substring>
+            runsOn: Regex<Substring>
         ) = (
             install: try .init("uses: \(Self.swift_install_action)@[^\\s]+"),
             release: /swift-release:\s+["']?\d+\.\d+(?:\.\d+)?-RELEASE["']?/,
             xcodeSpaceASCII: /Xcode \d+(?:\.\d+)?/,
             xcodeUnderscore: /Xcode_\d+(?:\.\d+)?/,
-            runsOn: /runs-on:\s*["']?(?:macos-\d+|xcode-\d+)["']?/,
-            matrixId: /id:\s*["']?(?:macos-\d+|xcode-\d+)["']?/
+            runsOn: /runs-on:\s*["']?(?:macos-\d+|xcode-\d+)["']?/
         )
 
         var modified: Bool = false
@@ -496,7 +494,6 @@ extension Rarestcheck.Sync {
             }
             if  let runner: String = self.macosRunner {
                 content.replace(pattern.runsOn, with: "runs-on: \(runner)")
-                content.replace(pattern.matrixId, with: "id: \(runner)")
             }
 
             if  content != original {
