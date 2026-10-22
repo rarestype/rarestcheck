@@ -43,6 +43,8 @@ To perform semantic symbol lookup, go-to-definition, hover type resolution, refe
 .github/tools/lsp_query.py expand <path/to/file.swift> [<line> <column>]
 ```
 
+Your harness may provide its own LSP tool backed by sourcekit-lsp, such as Claude Code’s `swift-lsp` plugin. Those tools cannot expand macros, so use `lsp_query.py expand` instead. sourcekit-lsp offers expansion only as a code action (“Expand Macro”), and the expansion arrives as a `window/showDocument` request for a generated file, not as the reply to the command. The `swift-lsp` plugin only starts `sourcekit-lsp` for `.swift` files, and Claude Code’s LSP tool supports neither code actions nor commands.
+
 If you do choose to use `grep` (for example, when searching for strings that are not Swift symbols), make sure to exclude build directories (such as `.build`, `.build.wasm`, etc.) and package caches (such as `node_modules`) as `grep` traversal through these can be very slow. Alternatively, use `git grep` to only search through tracked files.
 
 
