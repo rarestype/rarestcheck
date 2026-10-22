@@ -27,7 +27,7 @@ jobs:
                         --swift-install-version 'v1' \
                         --swift-version '6.4.1' \
                         --xcode-version '27.1' \
-                        --macos-runner 'xcode-27' \
+                        --macOS-runner 'xcode-27' \
                         --push
                 env:
                     AUTOMATION_APP_CLIENT: ${{ vars.AUTOMATION_APP_CLIENT }}

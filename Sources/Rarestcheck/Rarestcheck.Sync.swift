@@ -35,9 +35,9 @@ extension Rarestcheck {
             help: "Xcode version"
         ) var xcodeVersion: String?
         @Option(
-            name: [.customLong("macos-runner")],
+            name: [.customLong("macOS-runner")],
             help: "macOS runner label"
-        ) var macosRunner: String?
+        ) var macOSRunner: String?
 
 
         @Flag(
@@ -439,7 +439,7 @@ extension Rarestcheck.Sync {
         if  case nil = self.swiftInstallVersion,
             case nil = self.swiftVersion,
             case nil = self.xcodeVersion,
-            case nil = self.macosRunner {
+            case nil = self.macOSRunner {
             return
         }
 
@@ -492,7 +492,7 @@ extension Rarestcheck.Sync {
                 content.replace(pattern.xcodeSpaceASCII, with: "Xcode \(xcode)")
                 content.replace(pattern.xcodeUnderscore, with: "Xcode_\(xcode)")
             }
-            if  let runner: String = self.macosRunner {
+            if  let runner: String = self.macOSRunner {
                 content.replace(pattern.runsOn, with: "runs-on: \(runner)")
             }
 
