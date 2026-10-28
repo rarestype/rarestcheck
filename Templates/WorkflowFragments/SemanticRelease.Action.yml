@@ -1,0 +1,22 @@
+    action:
+        name: Move Major Tag
+        needs:
+            -   release
+            -   publish
+
+        runs-on: ubuntu-24.04-arm
+        steps:
+            -   name: ⚡ Checkout repository ⚡
+                uses: actions/checkout@v6
+
+            -   name: ⚡ Move major tag ⚡
+                env:
+                    VERSION: ${{ needs.release.outputs.version }}
+                run: |
+                    # people use an action by its major version, such as `v1`, which follows the
+                    # newest release with that major version, so a major release starts a new one
+                    # and leaves the old one where it was
+                    MAJOR="v${VERSION%%.*}"
+                    git fetch origin "refs/tags/${VERSION}:refs/tags/${VERSION}"
+                    git tag -f "$MAJOR" "${VERSION}^{commit}"
+                    git push --force origin "refs/tags/${MAJOR}"
