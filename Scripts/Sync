@@ -139,6 +139,13 @@ for template in "$TEMPLATES"/Workflows/*.yml; do
             done < "$expected" >> "$path"
         fi
     done
+    # fragments that run after publishing, for repositories that are GitHub Actions
+    for fragment in Action; do
+        expected="${TEMPLATES}/WorkflowFragments/${name}.${fragment}.yml"
+        if [[ -f "$expected" && ( -f action.yml || -f action.yaml ) ]]; then
+            cat "$expected" >> "$path"
+        fi
+    done
 
     git add "$path"
 done
