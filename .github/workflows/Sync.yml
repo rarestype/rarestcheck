@@ -25,7 +25,7 @@ jobs:
                 run: |
                     rarestcheck sync Templates/Repositories -t autosync \
                         --swift-install-version 'v1' \
-                        --swift-version '6.4.1' \
+                        --swift-version '6.4.2' \
                         --xcode-version '27.2' \
                         --macOS-runner 'xcode-27' \
                         --push
