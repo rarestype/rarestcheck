@@ -55,6 +55,13 @@ extension Rarestcheck.Sync: AsyncParsableCommand {
 }
 extension Rarestcheck.Sync: RarestcheckCommand {
     func run(on repo: GitHub.Repo) async throws -> Bool {
+        // the repository list keeps public archived repositories, so the audit still checks
+        // their history, but an archived repository is read-only, so a push to it would fail
+        if  repo.archived {
+            print("💞 skipped archived repository \(repo.owner.login)/\(repo.name)")
+            return true
+        }
+
         try self.workspace.create()
         let clone: FilePath.Directory = self.workspace / repo.name
         if try !clone.exists {
